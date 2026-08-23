@@ -1,0 +1,2161 @@
+<script>
+// ==================== STATE MANAGEMENT ====================
+let appData = [];
+let appSettings = [];
+let appStockData = [];
+let appAlokasiData = [];
+let appCabangData = [];
+let currentView = 'dashboard';
+let itemToClose = null;
+let itemToAlokasi = null;
+
+// Helper: cek Is_Closed (handle boolean & string)
+function isClosed(d) {
+  return d.Is_Closed === true || d.Is_Closed === 'true' || d.Is_Closed === 'TRUE';
+}
+
+// ==================== INITIALIZATION ====================
+document.addEventListener('DOMContentLoaded', () => {
+  setupNavigation();
+  setupUploadModal();
+  setupConfirmModal();
+  setupExportModal();
+  setupWAModal();
+  setupSearch();
+  setupAuth();
+  setupAlokasi();
+  setupAlokasiCabang();
+  setupNotifications();
+  
+  // Initialize Clock
+  setInterval(updateClock, 1000);
+  updateClock();
+});
+
+// Clock Function
+function updateClock() {
+  const timeEl = document.getElementById('live-time');
+  const dateEl = document.getElementById('live-date');
+  if (!timeEl || !dateEl) return;
+  
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  timeEl.textContent = `${h}:${m}:${s}`;
+  
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  dateEl.textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+
+// Function to handle TT code click
+function searchForCode(code) {
+  const orderPartTab = document.querySelector('.nav-item[data-target="order-part"]');
+  if (orderPartTab) orderPartTab.click();
+  
+  const searchInput = document.getElementById('search-input');
+  if (searchInput) {
+    searchInput.value = code;
+    searchInput.dispatchEvent(new Event('input'));
+  }
+}
+
+function setupAuth() {
+  let loggedIn = false;
+  try {
+    loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  } catch(e) {}
+  
+  if (loggedIn) {
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app-content').classList.remove('hidden');
+    updateAvatar();
+    loadData();
+    
+    // Auto-refresh setiap 15 menit
+    setInterval(() => {
+      loadData(false);
+    }, 900000);
+  } else {
+    document.getElementById('login-screen').classList.remove('hidden');
+    document.getElementById('app-content').classList.add('hidden');
+  }
+  
+  const btnLogin = document.getElementById('btn-login');
+  btnLogin.addEventListener('click', () => {
+    const user = document.getElementById('login-username').value;
+    const pass = document.getElementById('login-password').value;
+    const alertBox = document.getElementById('login-alert');
+    
+    if (!user || !pass) {
+      alertBox.textContent = 'Harap isi username dan password!';
+      alertBox.classList.remove('hidden');
+      return;
+    }
+    
+    btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+    btnLogin.disabled = true;
+    
+    google.script.run
+      .withSuccessHandler(res => {
+        btnLogin.innerHTML = 'Masuk';
+        btnLogin.disabled = false;
+        
+        if (res.success) {
+          try {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('loggedUsername', user);
+          } catch(e) {
+            console.warn('LocalStorage tidak tersedia (mungkin diblokir browser).');
+          }
+          document.getElementById('login-screen').classList.add('hidden');
+          document.getElementById('app-content').classList.remove('hidden');
+          updateAvatar();
+          loadData();
+          
+          // Auto-refresh setiap 15 menit
+          setInterval(() => {
+            loadData(false);
+          }, 900000);
+        } else {
+          alertBox.textContent = res.message;
+          alertBox.classList.remove('hidden');
+        }
+      })
+      .withFailureHandler(err => {
+        btnLogin.innerHTML = 'Masuk';
+        btnLogin.disabled = false;
+        alertBox.textContent = 'Terjadi kesalahan jaringan.';
+        alertBox.classList.remove('hidden');
+      })
+      .verifyLogin(user, pass);
+  });
+  
+  // Logout listener
+  const btnLogout = document.getElementById('btn-logout');
+  const modalLogout = document.getElementById('logout-modal');
+  
+  if (btnLogout && modalLogout) {
+    btnLogout.addEventListener('click', () => {
+      modalLogout.classList.remove('hidden');
+    });
+    
+    document.getElementById('btn-cancel-logout').addEventListener('click', () => {
+      modalLogout.classList.add('hidden');
+    });
+    
+    document.getElementById('btn-confirm-logout').addEventListener('click', () => {
+      modalLogout.classList.add('hidden');
+      try {
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('loggedUsername');
+      } catch(e) {}
+      document.getElementById('app-content').classList.add('hidden');
+      document.getElementById('login-screen').classList.remove('hidden');
+      document.getElementById('login-username').value = '';
+      document.getElementById('login-password').value = '';
+      appData = [];
+    });
+  }
+  
+  // Toggle Password Visibility
+  const togglePassword = document.getElementById('toggle-password');
+  const passwordInput = document.getElementById('login-password');
+  if (togglePassword && passwordInput) {
+    togglePassword.addEventListener('click', () => {
+      const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      passwordInput.setAttribute('type', type);
+      togglePassword.classList.toggle('fa-eye');
+      togglePassword.classList.toggle('fa-eye-slash');
+    });
+  }
+  
+  // Enter key listener
+  const loginUsername = document.getElementById('login-username');
+  const handleEnter = (e) => {
+    if (e.key === 'Enter') {
+      btnLogin.click();
+    }
+  };
+  if (loginUsername && passwordInput) {
+    loginUsername.addEventListener('keypress', handleEnter);
+    passwordInput.addEventListener('keypress', handleEnter);
+  }
+}
+
+function updateAvatar() {
+  try {
+    let user = localStorage.getItem('loggedUsername');
+    if (user) {
+      // Kapitalisasi huruf pertama
+      user = user.charAt(0).toUpperCase() + user.slice(1);
+      
+      const avatarName = document.getElementById('user-avatar-name');
+      const avatarInitial = document.getElementById('user-avatar-initial');
+      
+      if (avatarName) avatarName.textContent = user;
+      if (avatarInitial) avatarInitial.textContent = user.charAt(0).toUpperCase();
+    }
+  } catch (e) {}
+}
+
+// ==================== NAVIGATION ====================
+function setupNavigation() {
+  const hamburgerBtn = document.getElementById('hamburger-btn');
+  const navMenu = document.getElementById('nav-menu');
+  const topbarRight = document.getElementById('topbar-right');
+  
+  if (hamburgerBtn) {
+    hamburgerBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('show');
+      if(topbarRight) topbarRight.classList.toggle('show');
+    });
+  }
+
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      // Sembunyikan menu lagi kalau di hp setelah klik
+      navMenu.classList.remove('show');
+      if(topbarRight) topbarRight.classList.remove('show');
+
+      navItems.forEach(n => n.classList.remove('active'));
+      document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
+      
+      item.classList.add('active');
+      const target = item.getAttribute('data-target');
+      currentView = target;
+      
+      const arsipFilters = document.getElementById('arsip-filters');
+      if (target === 'arsip') {
+        arsipFilters.classList.remove('hidden');
+      } else {
+        arsipFilters.classList.add('hidden');
+      }
+
+      if (target === 'arsip') {
+        document.getElementById('btn-upload-modal').classList.add('hidden');
+      } else {
+        document.getElementById('btn-upload-modal').classList.remove('hidden');
+      }
+
+      if (target === 'order-part' || target === 'siap-diambil') {
+        document.getElementById('garansi-filters').classList.remove('hidden');
+      } else {
+        document.getElementById('garansi-filters').classList.add('hidden');
+      }
+      
+      if (target === 'order-part') {
+        document.getElementById('btn-export-part').classList.remove('hidden');
+      } else {
+        document.getElementById('btn-export-part').classList.add('hidden');
+      }
+      
+      if (target === 'dashboard') {
+        const dash = document.getElementById('dashboard');
+        dash.classList.remove('hidden');
+        dash.style.animation = 'none';
+        dash.offsetHeight; // trigger reflow
+        dash.style.animation = '';
+        updateDashboardStats();
+      } else if (target === 'alokasi-part') {
+        const alokasiSec = document.getElementById('alokasi-part');
+        alokasiSec.classList.remove('hidden');
+        alokasiSec.style.animation = 'none';
+        alokasiSec.offsetHeight;
+        alokasiSec.style.animation = '';
+        renderAlokasiTable();
+      } else {
+        const table = document.getElementById('table-view');
+        table.classList.remove('hidden');
+        table.style.animation = 'none';
+        table.offsetHeight; // trigger reflow
+        table.style.animation = '';
+        renderTable(target);
+      }
+    });
+  });
+}
+
+// ==================== DATA LOADING ====================
+function loadData(showSpinner = true) {
+  if (showSpinner) showLoading(true);
+  
+  if (typeof google === 'undefined') {
+    console.warn("Google Apps Script API tidak ditemukan. Menggunakan Mock Data.");
+    setTimeout(() => {
+      appData = [
+        { Kode: 'YGY-001', Status: 'Menunggu Konfirmasi', Kategori_File: 'konfirmasi', Pelanggan: 'Budi', Unit: 'Laptop Asus', SN: 'AS123', Is_Closed: false },
+        { Kode: 'YGY-002', Status: 'Menunggu Order Part', Kategori_File: 'order_part', Pelanggan: 'Andi', Unit: 'Printer', SN: 'PR456', Is_Closed: false },
+        { Kode: 'YGY-003', Status: 'Siap Diambil', Kategori_File: 'siap_diambil', Pelanggan: 'Sari', Unit: 'PC Rakitan', SN: 'PC789', Is_Closed: false },
+        { Kode: 'YGY-004', Status: 'Selesai', Kategori_File: 'arsip', Pelanggan: 'Tono', Unit: 'Monitor', SN: 'MN001', Is_Closed: true }
+      ];
+      showLoading(false);
+      updateDashboardStats();
+    }, 1000);
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      try {
+        showLoading(false);
+        console.log("getAllData response:", JSON.stringify(res).substring(0, 500));
+        if (res && res.success) {
+          appData = res.data || [];
+          if (res.settings) appSettings = res.settings;
+          if (res.stock) appStockData = res.stock;
+          if (res.alokasi) appAlokasiData = res.alokasi;
+          if (res.cabang) appCabangData = res.cabang;
+          console.log("appData loaded:", appData.length, "items");
+          if (currentView === 'dashboard') updateDashboardStats();
+          else renderTable(currentView);
+        } else {
+          console.error("getAllData returned error:", res);
+          alert("Gagal memuat data: " + (res ? res.error : "Response kosong"));
+        }
+      } catch(e) {
+        showLoading(false);
+        console.error("Error di loadData successHandler:", e);
+        alert("Error saat memproses data: " + e.message);
+      }
+    })
+    .withFailureHandler(function(err) {
+      showLoading(false);
+      console.error("getAllData failure:", err);
+      alert("Error jaringan saat memuat data: " + err);
+    })
+    .getAllData();
+}
+
+function updateDashboardStats() {
+  const konf = appData.filter(d => !isClosed(d) && d.Kategori_File === 'konfirmasi').length;
+  const orderData = appData.filter(d => !isClosed(d) && d.Kategori_File === 'order_part');
+  const siap = appData.filter(d => !isClosed(d) && d.Kategori_File === 'siap_diambil').length;
+  
+  document.getElementById('count-konfirmasi').textContent = konf;
+  document.getElementById('count-order').textContent = orderData.length;
+  document.getElementById('count-siap').textContent = siap;
+
+  // Render Kebutuhan Part List
+  let partsToOrder = {};
+  
+  orderData.forEach(d => {
+    if (d.Kebutuhan_Part) {
+      let parts = d.Kebutuhan_Part.split(/\n/);
+      parts.forEach(p => {
+        let pTrim = p.trim();
+        if (pTrim !== "") {
+          let lowerItem = pTrim.toLowerCase();
+          let existingKey = Object.keys(partsToOrder).find(k => k.toLowerCase() === lowerItem);
+          if (existingKey) {
+             partsToOrder[existingKey].count++;
+             if (d.Kode) partsToOrder[existingKey].codes.add(d.Kode);
+          } else {
+             partsToOrder[pTrim] = { count: 1, codes: new Set() };
+             if (d.Kode) partsToOrder[pTrim].codes.add(d.Kode);
+          }
+        }
+      });
+    }
+  });
+
+  let iwHtml = '';
+  let oowHtml = '';
+  let iwCount = 0;
+  let oowCount = 0;
+
+  for (let part in partsToOrder) {
+    let data = partsToOrder[part];
+    let badgeHtml = data.count > 1 
+      ? `<span class="part-badge badge-danger"><i class="fas fa-exclamation-circle"></i> order ${data.count} pcs</span>` 
+      : `<span class="part-badge badge-normal">1 pcs</span>`;
+    
+    // Generate clickable TT tags
+    let codesHtml = '';
+    data.codes.forEach(code => {
+      codesHtml += `<span class="tt-tag" onclick="searchForCode('${code}')" title="Lihat detail TT ini">${code}</span>`;
+    });
+      
+    let partHtml = `
+      <div class="part-list-item">
+        <div class="part-name-text">${codesHtml} ${part}</div>
+        ${badgeHtml}
+      </div>
+    `;
+
+    if (part.toLowerCase().includes('iw')) {
+       iwHtml += partHtml;
+       iwCount++;
+    } else {
+       oowHtml += partHtml;
+       oowCount++;
+    }
+  }
+
+  const iwEl = document.getElementById('part-list-iw');
+  const oowEl = document.getElementById('part-list-oow');
+
+  if (iwEl) iwEl.innerHTML = iwCount > 0 ? iwHtml : `<div class="empty-state-card">Belum ada part IW yang perlu diorder hari ini.</div>`;
+  if (oowEl) oowEl.innerHTML = oowCount > 0 ? oowHtml : `<div class="empty-state-card">Belum ada part OOW yang perlu diorder hari ini.</div>`;
+}
+
+function updateAvatarNotifications() {
+  let delayedCount = 0;
+  let todayDate = new Date();
+  todayDate.setHours(0,0,0,0);
+  
+  appData.forEach(d => {
+    if (!isClosed(d) && d.Kategori_File === 'siap_diambil' && d.Tgl_Konfirmasi_User) {
+      let parts = d.Tgl_Konfirmasi_User.split(' ')[0].split('-');
+      if (parts.length === 3) {
+        let kDate = new Date(parts[2], parts[1] - 1, parts[0]);
+        let diffDays = Math.floor((todayDate - kDate) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 2) {
+          delayedCount++;
+        }
+      }
+    }
+  });
+
+  const badge = document.getElementById('avatar-notification-badge');
+  const userProfile = document.getElementById('user-profile-badge');
+  const notifList = document.getElementById('notif-list');
+  
+  if (badge && userProfile && notifList) {
+    if (delayedCount > 0) {
+      badge.textContent = delayedCount;
+      badge.classList.remove('hidden');
+      userProfile.removeAttribute('title');
+      
+      notifList.innerHTML = `
+          <div style="width: 35px; height: 35px; border-radius: 50%; background: #fff7ed; color: #f97316; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <i class="fas fa-bell"></i>
+          </div>
+          <div>
+              <div style="font-weight: 700; margin-bottom: 3px;">Peringatan Konfirmasi</div>
+              <div style="color: var(--text-muted); font-size: 12px;">Ada ${delayedCount} unit yang harus dikonfirmasi ulang!</div>
+          </div>
+      `;
+    } else {
+      badge.classList.add('hidden');
+      userProfile.removeAttribute('title');
+      notifList.innerHTML = `
+          <div style="width: 100%; text-align: center; color: var(--text-muted); padding: 10px 0;">
+              Tidak ada notifikasi baru.
+          </div>
+      `;
+    }
+  }
+}
+
+function setupNotifications() {
+  const profileBadge = document.getElementById('user-profile-badge');
+  const notifDropdown = document.getElementById('notif-dropdown');
+  
+  if (profileBadge && notifDropdown) {
+    profileBadge.addEventListener('click', function(e) {
+      e.stopPropagation();
+      notifDropdown.classList.toggle('hidden');
+    });
+    
+    document.addEventListener('click', function(e) {
+      if (!profileBadge.contains(e.target) && !notifDropdown.contains(e.target)) {
+        notifDropdown.classList.add('hidden');
+      }
+    });
+  }
+}
+
+// ==================== TABLE RENDERING ====================
+function renderTable(kategori, searchTerm = "") {
+  let title = "Data Tabel";
+  let filterKategori = kategori;
+  
+  const uploadBtn = document.getElementById('btn-upload-modal');
+  const arsipFilters = document.getElementById('arsip-filters');
+
+  if (kategori === 'arsip') {
+    title = "Arsip Data Selesai";
+    uploadBtn.classList.add('hidden');
+    arsipFilters.classList.remove('hidden');
+  } else {
+    uploadBtn.classList.remove('hidden');
+    arsipFilters.classList.add('hidden');
+    if (kategori === 'order-part') {
+      title = "Data Order Part & Alokasi";
+      filterKategori = 'order_part';
+    } else if (kategori === 'siap-diambil') {
+      title = "Data Siap Diambil";
+      filterKategori = 'siap_diambil';
+    } else if (kategori === 'konfirmasi') {
+      title = "Data Menunggu Konfirmasi";
+    } else if (kategori === 'so') {
+      title = "Stock Opname (SO)";
+      filterKategori = 'siap_diambil';
+      uploadBtn.classList.add('hidden');
+    }
+  }
+
+  if (kategori === 'siap-diambil') {
+     document.getElementById('konfirmasi-filters').classList.remove('hidden');
+  } else {
+     document.getElementById('konfirmasi-filters').classList.add('hidden');
+  }
+
+  if (kategori === 'so') {
+     document.getElementById('so-filters').classList.remove('hidden');
+  } else {
+     document.getElementById('so-filters').classList.add('hidden');
+  }
+
+  if (kategori === 'order-part' || kategori === 'siap-diambil') {
+     document.getElementById('sort-filters').classList.add('hidden');
+  } else {
+     document.getElementById('sort-filters').classList.remove('hidden');
+  }
+
+  document.getElementById('table-title').textContent = title;
+  
+  // Filter Data
+  let filteredData = appData.filter(d => {
+    if (kategori === 'arsip') return isClosed(d);
+    return d.Kategori_File === filterKategori && !isClosed(d);
+  });
+  
+  // Filter Spesifik Garansi
+  if (kategori === 'order-part' || kategori === 'siap-diambil') {
+    const fGaransi = document.getElementById('filter-garansi').value;
+    if (fGaransi) {
+      filteredData = filteredData.filter(d => d.Garansi && d.Garansi.toUpperCase().includes(fGaransi));
+    }
+  }
+  
+  // Filter Konfirmasi
+  if (kategori === 'siap-diambil') {
+    const fKonf = document.getElementById('filter-konfirmasi').value;
+    if (fKonf === 'Sudah') {
+      filteredData = filteredData.filter(d => !!d.Tgl_Konfirmasi_User);
+    } else if (fKonf === 'Belum') {
+      filteredData = filteredData.filter(d => !d.Tgl_Konfirmasi_User);
+    }
+  }
+
+  // Filter SO
+  if (kategori === 'so') {
+    const fSo = document.getElementById('filter-so').value;
+    if (fSo === 'true') {
+      filteredData = filteredData.filter(d => d.SO_Status === true || d.SO_Status === 'true');
+    } else if (fSo === 'false') {
+      filteredData = filteredData.filter(d => d.SO_Status !== true && d.SO_Status !== 'true');
+    }
+  }
+  
+  // Filter Spesifik Arsip (Bulan, Tahun, Kategori)
+  if (kategori === 'arsip') {
+    const fKat = document.getElementById('filter-kategori-arsip').value;
+    const fBulan = document.getElementById('filter-bulan').value;
+    const fTahun = document.getElementById('filter-tahun').value;
+    
+    // Terapkan filter Kategori Asal
+    if (fKat) {
+       filteredData = filteredData.filter(d => d.Kategori_File === fKat);
+    }
+    
+    if (fBulan || fTahun) {
+      filteredData = filteredData.filter(d => {
+        if (!d.Kode) return true; // jika ga ada kode, anggap tampil
+        
+        // Ekstrak Tahun dan Bulan dari format Kode: CABANG-YYYYMMDD-URUT
+        // Contoh: YGY-20260804-022
+        const matchKode = d.Kode.match(/^.*?-(\d{4})(\d{2})\d{2}-/);
+        
+        if (matchKode) {
+           let match = true;
+           if (fTahun && matchKode[1] !== fTahun) match = false;
+           if (fBulan && matchKode[2] !== fBulan) match = false;
+           return match;
+        }
+        
+        return true;
+      });
+    }
+  }
+  
+  // Pencarian
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    filteredData = filteredData.filter(d => 
+      (d.Kode && d.Kode.toLowerCase().includes(term)) ||
+      (d.SN && d.SN.toLowerCase().includes(term)) ||
+      (d.Unit && d.Unit.toLowerCase().includes(term)) ||
+      (d.Pelanggan && d.Pelanggan.toLowerCase().includes(term))
+    );
+  }
+
+  // Sorting
+  const sortVal = document.getElementById('filter-sort').value;
+  if (sortVal === 'az') {
+    filteredData.sort((a, b) => (a.Kode || "").localeCompare(b.Kode || ""));
+  } else if (sortVal === 'za') {
+    filteredData.sort((a, b) => (b.Kode || "").localeCompare(a.Kode || ""));
+  } else if (sortVal === 'terlama') {
+    // Biarkan sesuai urutan asli dari database (terlama ke terbaru)
+  } else {
+    // Default ('terbaru' atau empty string): balik urutan array
+    filteredData.reverse();
+  }
+
+  // Update counter
+  document.getElementById('table-count').textContent = filteredData.length;
+  
+  if (kategori === 'siap-diambil') {
+     document.getElementById('siap-diambil-stats').classList.remove('hidden');
+     let countCancel = filteredData.filter(d => d.Status && String(d.Status).toLowerCase().includes('cancel')).length;
+     let countSiap = filteredData.length - countCancel;
+     
+     let countSiapEl = document.getElementById('count-siap-table');
+     if (!countSiapEl) countSiapEl = document.getElementById('count-siap'); // Fallback jika user pakai id lama
+     
+     if (countSiapEl) countSiapEl.textContent = countSiap;
+     
+     let countCancelEl = document.getElementById('count-cancel');
+     if (countCancelEl) countCancelEl.textContent = countCancel;
+  } else {
+     document.getElementById('siap-diambil-stats').classList.add('hidden');
+  }
+
+  const thead = document.getElementById('table-head');
+  const tbody = document.getElementById('table-body');
+  
+  // Render Headers
+  let wPelanggan = kategori === 'order-part' ? '140px' : 'auto';
+  let wUnit = kategori === 'order-part' ? '150px' : 'auto';
+
+  let wKode = kategori === 'so' ? 'width: 170px; min-width: 170px; max-width: 170px; white-space: nowrap;' : 'width: 220px;';
+  let headersHTML = `
+    <th style="${wKode}">Kode / Status</th>
+  `;
+  
+  if (kategori !== 'so') {
+    headersHTML += `
+      <th style="width: ${wPelanggan};">Pelanggan</th>
+      <th style="width: ${wUnit};">Unit / SN</th>
+    `;
+  }
+  
+  if (kategori === 'order-part') {
+    headersHTML += `<th style="width: auto;">Kebutuhan Part</th><th style="width: 220px;">Status Order Part</th><th style="width: 110px; text-align: center;">Aksi Admin</th>`;
+  } else if (kategori === 'konfirmasi') {
+    headersHTML += `<th>Status Konfirmasi</th><th style="width: 140px; text-align: center;">Aksi Admin</th>`;
+  } else if (kategori === 'siap-diambil') {
+    headersHTML += `<th style="width: 150px; text-align: center;">Status Konfirmasi</th><th style="width: 110px; text-align: center;">Aksi Admin</th>`;
+  } else if (kategori === 'arsip') {
+    headersHTML += `<th style="width: auto;">Catatan</th><th style="width: 150px; text-align: center;">Aksi Admin</th>`;
+  } else if (kategori === 'so') {
+    headersHTML += `<th style="width: auto;">Catatan SO</th><th style="width: 70px; text-align: center;">Ada?</th><th style="width: 75px; text-align: center;">Aksi</th>`;
+  } else {
+    headersHTML += `<th style="width: 110px; text-align: center;">Aksi Admin</th>`;
+  }
+  thead.innerHTML = headersHTML;
+  
+  // Render Rows
+  if (filteredData.length === 0) {
+    document.getElementById('data-table').classList.add('hidden');
+    document.getElementById('empty-state').classList.remove('hidden');
+  } else {
+    document.getElementById('data-table').classList.remove('hidden');
+    document.getElementById('empty-state').classList.add('hidden');
+    
+    let rowsHTML = "";
+    filteredData.forEach(d => {
+      let aksiBtn = kategori === 'arsip' 
+        ? `<div style="display: flex; gap: 8px; align-items: center;">
+             <span class="badge" style="color:var(--secondary); font-weight:bold;">Selesai</span>
+             <button class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size: 11px;" onclick="openDeleteModal('${d.Kode}')"><i class="fas fa-trash"></i> Hapus</button>
+           </div>` 
+        : "";
+      
+      let btnWA = "";
+      if (kategori === 'siap-diambil') {
+        btnWA = `<button class="btn btn-sm btn-outline btn-wa" style="margin-bottom: 5px; width: 100px; padding: 6px 0;" onclick="openWAModal('${d.Kode}')"><i class="fab fa-whatsapp"></i> Salin WA</button><br>`;
+      }
+      
+      let actionBtn = `<button class="btn btn-sm btn-success" style="width: 100px; padding: 6px 0;" onclick="openConfirmModal('${d.Kode}')"><i class="fas fa-check"></i> Selesaikan</button>`;
+      
+      if (kategori === 'so') {
+        actionBtn = `<button class="btn btn-sm btn-danger" style="width: 75px; padding: 6px 0;" onclick="openConfirmModal('${d.Kode}')"><i class="fas fa-times"></i> Close</button>`;
+      } else if (kategori === 'konfirmasi') {
+        actionBtn = `<button class="btn btn-sm btn-success" style="width: 140px; padding: 6px 0;" onclick="openConfirmModal('${d.Kode}')"><i class="fas fa-check"></i> Selesai Konfirmasi</button>`;
+      } else if (kategori === 'order-part') {
+        actionBtn += `<br><button class="btn btn-sm" style="width: 100px; padding: 6px 0; margin-top: 5px; background: var(--primary); color: white; border: none;" onclick="openAlokasiModal('${d.Kode}')"><i class="fas fa-box"></i> Alokasi</button>`;
+      }
+      
+      let actionHTML = btnWA + (kategori === 'arsip' ? aksiBtn : actionBtn);
+      
+      let extraCol = "";
+      if (kategori === 'siap-diambil') {
+        let isKonfirmasi = d.Tgl_Konfirmasi_User ? true : false;
+        let btnClass = isKonfirmasi ? "btn-success" : "btn-outline";
+        let btnText = isKonfirmasi ? `<i class="fas fa-check-double"></i> Sudah Konfirmasi` : `<i class="fas fa-clock"></i> Belum Konfirmasi`;
+        let tglText = isKonfirmasi ? `<div style="font-size: 10px; margin-top: 4px; color: var(--text-muted); text-align: center;">${d.Tgl_Konfirmasi_User}</div>` : "";
+        
+        extraCol = `
+          <td style="vertical-align: middle; text-align: center; width: 150px;">
+            <button class="btn btn-sm ${btnClass}" style="width: 135px; padding: 6px 8px; font-size: 11.5px; border-radius: 6px;" onclick="toggleKonfirmasi('${d.Kode}')">
+               ${btnText}
+            </button>
+            ${tglText}
+          </td>
+        `;
+      } else if (kategori === 'order-part') {
+        extraCol = `
+          <td>
+            <textarea class="table-textarea highlightable" placeholder="Input Part... (pisahkan dengan baris baru / koma)" 
+                      oninput="autoResize(this)" onchange="updateNote('${d.Kode}', 'Kebutuhan_Part', this.value)" onkeyup="applyHighlight(this)">${d.Kebutuhan_Part || ''}</textarea>
+          </td>
+          <td>
+            <textarea class="table-textarea highlightable" placeholder="Ketik status..." 
+                   oninput="autoResize(this)" onchange="updateNote('${d.Kode}', 'Status_Part', this.value)" onkeyup="applyHighlight(this)">${d.Status_Part || ''}</textarea>
+          </td>
+        `;
+      } else if (kategori === 'konfirmasi') {
+        extraCol = `
+          <td>
+            <input type="text" class="table-input highlightable" 
+                   value="${d.Status_Konfirmasi || ''}" placeholder="Ketik status konfirmasi..." 
+                   style="font-size: 13px; padding: 6px; width: 100%;"
+                   onchange="updateNote('${d.Kode}', 'Status_Konfirmasi', this.value)" onkeyup="applyHighlight(this)">
+          </td>
+        `;
+      } else if (kategori === 'arsip') {
+        extraCol = `
+          <td>
+            <input type="text" class="table-input highlightable" placeholder="Tulis catatan..." 
+                   value="${d.Catatan_Admin || ''}"
+                   onchange="updateNote('${d.Kode}', 'Catatan_Admin', this.value)" onkeyup="applyHighlight(this)">
+          </td>
+        `;
+      } else if (kategori === 'so') {
+        let isChecked = d.SO_Status === true || d.SO_Status === 'true' ? 'checked' : '';
+        extraCol = `
+          <td>
+            <input type="text" class="so-note-input highlightable" placeholder="Catatan SO..." 
+                   value="${d.SO_Catatan || ''}"
+                   onchange="updateNote('${d.Kode}', 'SO_Catatan', this.value)" onkeyup="applyHighlight(this)">
+          </td>
+          <td style="text-align: center; vertical-align: middle;">
+            <input type="checkbox" class="so-checkbox" ${isChecked} onchange="updateNote('${d.Kode}', 'SO_Status', this.checked)">
+          </td>
+        `;
+      }
+      
+      let kodeDisplay = d.Kode || '-';
+      if (d.Link_Kode) {
+        kodeDisplay = `<a href="${d.Link_Kode}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 700;">${d.Kode}</a>`;
+      } else {
+        kodeDisplay = `<strong style="color: var(--primary);">${d.Kode}</strong>`;
+      }
+      
+      let garansiDisplay = "";
+      if ((kategori === 'order-part' || kategori === 'siap-diambil') && d.Garansi) {
+         let garansiVal = d.Garansi.toUpperCase();
+         let gColor = garansiVal.includes('IW') ? '#3b82f6' : (garansiVal.includes('OOW') ? '#10b981' : 'var(--text-muted)');
+         garansiDisplay = `<br><small style="color: ${gColor}; font-weight: 700;">Garansi: ${d.Garansi}</small>`;
+      }
+      
+      let customerInfo = "";
+      if (kategori !== 'so') {
+        if (kategori === 'order-part') {
+          customerInfo = `<td style="max-width: 140px; white-space: normal; word-wrap: break-word;">${d.Pelanggan || '-'}</td>
+               <td style="max-width: 150px; white-space: normal; word-wrap: break-word;">${d.Unit || '-'}<br><small class="text-muted">${d.SN || '-'}</small></td>`;
+        } else {
+          customerInfo = `<td>${d.Pelanggan || '-'}</td>
+               <td>${d.Unit || '-'}<br><small class="text-muted">${d.SN || '-'}</small></td>`;
+        }
+      }
+
+      let kodeStyle = kategori === 'so' ? 'font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;' : 'font-size: 14px;';
+      
+      let rowStyle = "";
+      if (kategori === 'siap-diambil' && d.Tgl_Konfirmasi_User) {
+        let parts = d.Tgl_Konfirmasi_User.split(' ')[0].split('-');
+        if (parts.length === 3) {
+          let kDate = new Date(parts[2], parts[1] - 1, parts[0]);
+          let todayDate = new Date();
+          todayDate.setHours(0,0,0,0);
+          let diffDays = Math.floor((todayDate - kDate) / (1000 * 60 * 60 * 24));
+          if (diffDays >= 2) {
+            rowStyle = "background-color: rgba(239, 68, 68, 0.1);"; // light red background
+          }
+        }
+      }
+
+      rowsHTML += `
+        <tr style="${rowStyle}">
+          <td style="${kodeStyle}">
+            ${kodeDisplay}<br>
+            <small class="text-muted" style="white-space: normal;">${d.Status || '-'}</small>${garansiDisplay}
+          </td>
+          ${customerInfo}
+          ${extraCol}
+          <td style="text-align: center; vertical-align: middle;">${actionHTML}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = rowsHTML;
+    
+    updateAvatarNotifications();
+    highlightAllInputs();
+    
+    // Auto-resize textareas after rendering
+    setTimeout(() => {
+      document.querySelectorAll('.table-textarea').forEach(ta => autoResize(ta));
+    }, 10);
+  }
+}
+
+function renderAlokasiTable(searchTerm = "") {
+  const tbody = document.getElementById('alokasi-table-body');
+  
+  let filteredData = [...appAlokasiData];
+  if (searchTerm) {
+    const s = searchTerm.toLowerCase();
+    filteredData = filteredData.filter(d => 
+      (d.Tanda_Terima && d.Tanda_Terima.toLowerCase().includes(s)) || 
+      (d.SN && d.SN.toLowerCase().includes(s))
+    );
+  }
+  
+  document.getElementById('table-count-alokasi').textContent = filteredData.length;
+  
+  if (filteredData.length === 0) {
+    document.getElementById('alokasi-table').style.display = 'none';
+    document.getElementById('empty-state-alokasi').classList.remove('hidden');
+    tbody.innerHTML = '';
+  } else {
+    document.getElementById('alokasi-table').style.display = 'table';
+    document.getElementById('empty-state-alokasi').classList.add('hidden');
+    
+    let html = '';
+    // Reverse to show latest first
+    const dataRev = filteredData.reverse();
+    
+    const groupedData = [];
+    const groupMap = {};
+    
+    dataRev.forEach(d => {
+      // Grouping key
+      const key = `${d.Tanda_Terima}|${d.Keterangan || ''}|${d.Tanggal_Alokasi || ''}`;
+      if (!groupMap[key]) {
+        const newGroup = {
+          groupId: key,
+          Tanda_Terima: d.Tanda_Terima,
+          Keterangan: d.Keterangan,
+          Tanggal_Alokasi: d.Tanggal_Alokasi,
+          items: []
+        };
+        groupedData.push(newGroup);
+        groupMap[key] = newGroup;
+      }
+      groupMap[key].items.push(d);
+    });
+    
+    window.currentAlokasiGroups = groupMap;
+    
+    groupedData.forEach(g => {
+      // Rekap Nama Barang
+      const namaCounts = {};
+      g.items.forEach(item => {
+        const nama = item.Nama_Barang || '-';
+        namaCounts[nama] = (namaCounts[nama] || 0) + 1;
+      });
+      
+      const namaArr = Object.keys(namaCounts).map(nama => {
+        const count = namaCounts[nama];
+        return count > 1 ? `${nama} (${count}x)` : nama;
+      });
+      const namaHtml = namaArr.join('<br>');
+      
+      // Hitung total peringatan
+      let warningCount = 0;
+      g.items.forEach(item => {
+        if (item.SN) {
+          const snHistory = appAlokasiData.filter(x => x.SN === item.SN);
+          if (snHistory.length > 1 && snHistory[0].Tanda_Terima !== item.Tanda_Terima) {
+            warningCount++;
+          }
+        }
+      });
+      
+      let keteranganHtml = g.Keterangan ? `<div style="font-weight: bold; margin-bottom: 5px;">${g.Keterangan}</div>` : '';
+      if (warningCount > 0) {
+        keteranganHtml += `<span style="color: var(--danger); font-size: 12px; font-weight: 500;"><i class="fas fa-exclamation-triangle"></i> Ada ${warningCount} Peringatan SN</span>`;
+      } else if (!keteranganHtml) {
+        keteranganHtml = '-';
+      }
+      
+      let snHtml = '';
+      g.items.forEach(item => {
+        let warningIcon = '';
+        if (item.SN) {
+          const snHistory = appAlokasiData.filter(x => x.SN === item.SN);
+          if (snHistory.length > 1 && snHistory[0].Tanda_Terima !== item.Tanda_Terima) {
+            warningIcon = ` <i class="fas fa-exclamation-triangle" style="color: var(--danger); font-size: 10px;" title="Pernah dipakai di: ${snHistory[0].Tanda_Terima}"></i>`;
+          }
+        }
+        snHtml += `<div style="font-family: monospace; background: #f1f5f9; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 4px;">${item.SN || '-'}${warningIcon}</div>`;
+      });
+      if (!snHtml) snHtml = '-';
+      
+      let tandaTerimaHtml = g.Tanda_Terima || '-';
+      const sourceData = appData.find(x => x.Kode === g.Tanda_Terima);
+      if (sourceData && sourceData.Link_Kode) {
+         tandaTerimaHtml = `<a href="${sourceData.Link_Kode}" target="_blank" style="color: var(--primary); text-decoration: underline; font-weight: 700;">${g.Tanda_Terima}</a>`;
+      } else {
+         tandaTerimaHtml = `<strong style="color: var(--primary);">${g.Tanda_Terima}</strong>`;
+      }
+      
+      html += `
+        <tr>
+          <td>${tandaTerimaHtml}</td>
+          <td style="vertical-align: top;"><div style="display: flex; flex-direction: column; gap: 4px;">${snHtml}</div></td>
+          <td style="font-weight: 500;">${namaHtml}</td>
+          <td style="color: var(--text-muted); font-size: 13px;"><i class="far fa-calendar-alt"></i> ${g.Tanggal_Alokasi || '-'}</td>
+          <td>${keteranganHtml}</td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+}
+
+function openSNListModal(encodedGroupId) {
+  const groupId = decodeURIComponent(atob(encodedGroupId));
+  if (!window.currentAlokasiGroups || !window.currentAlokasiGroups[groupId]) return;
+  
+  const group = window.currentAlokasiGroups[groupId];
+  const tbody = document.getElementById('sn-list-table-body');
+  let html = '';
+  
+  group.items.forEach(d => {
+    let warningHtml = '-';
+    if (d.SN) {
+      const snHistory = appAlokasiData.filter(item => item.SN === d.SN);
+      if (snHistory.length > 1) {
+        const firstUsage = snHistory[0];
+        if (firstUsage.Tanda_Terima !== d.Tanda_Terima) {
+           warningHtml = `<span style="color: var(--danger); font-size: 12px; font-weight: 500;">
+             <i class="fas fa-exclamation-triangle"></i> Pernah dipakai di: <br>${firstUsage.Tanda_Terima}
+           </span>`;
+        }
+      }
+    }
+    
+    html += `
+      <tr>
+        <td><span style="font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${d.SN || '-'}</span></td>
+        <td>${d.Nama_Barang || '-'}</td>
+        <td>${warningHtml}</td>
+      </tr>
+    `;
+  });
+  
+  tbody.innerHTML = html;
+  document.getElementById('sn-list-modal').classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const closeBtn = document.getElementById('close-sn-list');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      document.getElementById('sn-list-modal').classList.add('hidden');
+    });
+  }
+});
+
+function updateNote(kode, key, value) {
+  if (typeof google === 'undefined') {
+    let item = appData.find(d => d.Kode === kode);
+    if(item) item[key] = value;
+    return;
+  }
+  
+  let updates = {};
+  updates[key] = value;
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      if(res.success) {
+        let item = appData.find(d => d.Kode === kode);
+        if(item) item[key] = value;
+      }
+    })
+    .updateAdminNotes(kode, updates);
+}
+
+function toggleKonfirmasi(kode) {
+  let item = appData.find(d => d.Kode === kode);
+  if (!item) return;
+  
+  if (item.Tgl_Konfirmasi_User) {
+    // Switch to Belum Konfirmasi
+    updateNote(kode, 'Tgl_Konfirmasi_User', '');
+    item.Tgl_Konfirmasi_User = '';
+  } else {
+    // Switch to Sudah Konfirmasi
+    let today = new Date();
+    let dStr = today.getDate().toString().padStart(2, '0') + '-' + 
+               (today.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+               today.getFullYear() + ' ' +
+               today.getHours().toString().padStart(2, '0') + ':' +
+               today.getMinutes().toString().padStart(2, '0');
+    updateNote(kode, 'Tgl_Konfirmasi_User', dStr);
+    item.Tgl_Konfirmasi_User = dStr;
+  }
+  
+  renderTable(currentView, document.getElementById('search-input').value);
+}
+
+function setupSearch() {
+  const searchInput = document.getElementById('search-input');
+  searchInput.addEventListener('keyup', (e) => {
+    if (currentView !== 'dashboard') {
+      renderTable(currentView, e.target.value);
+    }
+  });
+  
+  const searchAlokasi = document.getElementById('search-alokasi');
+  if (searchAlokasi) {
+    searchAlokasi.addEventListener('keyup', (e) => {
+      renderAlokasiTable(e.target.value);
+    });
+  }
+  
+  const reloadArsip = () => {
+    if (currentView === 'arsip') renderTable(currentView, searchInput.value);
+  };
+  
+  document.getElementById('filter-bulan').addEventListener('change', reloadArsip);
+  document.getElementById('filter-tahun').addEventListener('change', reloadArsip);
+  document.getElementById('filter-kategori-arsip').addEventListener('change', reloadArsip);
+  
+  document.getElementById('filter-garansi').addEventListener('change', () => {
+    if (currentView === 'order-part' || currentView === 'siap-diambil') renderTable(currentView, searchInput.value);
+  });
+  
+  document.getElementById('filter-konfirmasi').addEventListener('change', () => {
+    if (currentView === 'siap-diambil') renderTable(currentView, searchInput.value);
+  });
+  
+  document.getElementById('filter-so').addEventListener('change', () => {
+    if (currentView === 'so') renderTable(currentView, searchInput.value);
+  });
+  
+  document.getElementById('filter-sort').addEventListener('change', () => {
+    renderTable(currentView, searchInput.value);
+  });
+}
+
+// ==================== EXPORT PART LOGIC ====================
+function setupExportModal() {
+  const btnExport = document.getElementById('btn-export-part');
+  const modalExport = document.getElementById('export-modal');
+  const txtArea = document.getElementById('export-textarea');
+  
+  btnExport.addEventListener('click', () => {
+    let partsList = [];
+    
+    const generateText = () => {
+      // Ambil semua data order part yang tidak closed, punya Kebutuhan_Part, dan Status_Part HARUS mengandung 'order'
+      const orderData = appData.filter(d => {
+        const isOrderPart = d.Kategori_File === 'order_part' && !d.Is_Closed && d.Kebutuhan_Part;
+        const hasOrder = d.Status_Part && d.Status_Part.toLowerCase().includes('order');
+        return isOrderPart && hasOrder;
+      });
+      partsList = [];
+      
+      orderData.forEach(d => {
+         // Pisahkan berdasarkan baris baru saja (agar koma di nama part tidak memisah teks)
+         let parts = d.Kebutuhan_Part.split(/\n/);
+         parts.forEach(p => {
+           let pTrim = p.trim();
+           if (pTrim !== "") {
+              partsList.push(pTrim);
+           }
+         });
+      });
+      
+      const useNumbering = document.getElementById('toggle-numbering').checked;
+      
+      if (partsList.length === 0) {
+        txtArea.value = "Tidak ada part yang perlu diorder.";
+      } else {
+        if (useNumbering) {
+          const numberedList = partsList.map((part, index) => `${index + 1}. ${part}`);
+          txtArea.value = numberedList.join("\n\n");
+        } else {
+          txtArea.value = partsList.join("\n\n");
+        }
+      }
+    };
+    
+    generateText();
+    document.getElementById('toggle-numbering').addEventListener('change', generateText);
+    
+    modalExport.classList.remove('hidden');
+  });
+  
+  const closeExport = () => { document.getElementById('export-modal').classList.add('hidden'); };
+  
+  document.getElementById('close-export').addEventListener('click', closeExport);
+  document.getElementById('btn-cancel-export').addEventListener('click', closeExport);
+  
+  document.getElementById('btn-copy-export').addEventListener('click', () => {
+    txtArea.select();
+    txtArea.setSelectionRange(0, 99999); 
+    document.execCommand("copy");
+    
+    const btn = document.getElementById('btn-copy-export');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-check"></i> Tersalin!`;
+    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+  });
+}
+
+// ==================== WA MODAL LOGIC ====================
+function openWAModal(kode) {
+  const d = appData.find(item => item.Kode === kode);
+  if (!d) return;
+  
+  let adminName = "Admin";
+  try {
+    const rawUser = localStorage.getItem('loggedUsername');
+    if (rawUser) adminName = rawUser.charAt(0).toUpperCase() + rawUser.slice(1);
+  } catch(e) {}
+  
+  const isIW = d.Garansi && d.Garansi.toUpperCase().includes('IW');
+  let txt = "";
+  let custName = d.Pelanggan || 'Kak';
+  let tcode = d.Kode || '-';
+  
+  if (isIW) {
+    txt = `Selamat pagi kak ${custName}, saya ${adminName} dari Els Service.\n\nKami infokan untuk no tanda terima *${tcode}* sudah selesai service & dapat diambil. \n*Tidak dikenakan biaya*\n\nNote Teknisi : "-"\n \nPengambilan *WAJIB* membawa *TANDA TERIMA* ya kak. \n*Pengambilan Setiap hari Senin-Minggu jam 08.30 - 20.00*\n\nJika barang tidak diambil maksimal 14 hari setelah tanggal konfirmasi pertama, bukan menjadi tanggung jawab kami.\n\nTrimakasih`;
+  } else {
+    txt = `Selamat pagi kak ${custName}, saya ${adminName} dari Els Service.\n\nKami infokan untuk no tanda terima *${tcode}* unit sudah selesai service dan dapat diambil. \n\nTotal biaya: *Rp. 0* \n \nNote Teknisi : "-"\n\nPengambilan *WAJIB* membawa *TANDA TERIMA* ya kak. \n*Pengambilan Setiap hari Senin-Minggu jam 08.30 - 20.00*\n\nJika barang tidak diambil *maksimal 14 hari* setelah tanggal konfirmasi pertama, bukan menjadi tanggung jawab kami.\n\nterima kasih.`;
+  }
+  
+  document.getElementById('wa-textarea').value = txt;
+  document.getElementById('wa-modal').classList.remove('hidden');
+}
+
+function setupWAModal() {
+  const closeModal = () => document.getElementById('wa-modal').classList.add('hidden');
+  document.getElementById('close-wa').addEventListener('click', closeModal);
+  document.getElementById('btn-cancel-wa').addEventListener('click', closeModal);
+  
+  document.getElementById('btn-copy-wa').addEventListener('click', () => {
+    const txtArea = document.getElementById('wa-textarea');
+    txtArea.select();
+    txtArea.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+    
+    const btn = document.getElementById('btn-copy-wa');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = `<i class="fas fa-check"></i> Tersalin!`;
+    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+  });
+}
+
+// ==================== CLOSED LOGIC ====================
+let itemToDelete = null;
+
+function openConfirmModal(kode) {
+  itemToClose = kode;
+  document.getElementById('confirm-kode').textContent = kode;
+  document.getElementById('confirm-modal').classList.remove('hidden');
+}
+
+function openDeleteModal(kode) {
+  itemToDelete = kode;
+  document.getElementById('delete-kode').textContent = kode;
+  document.getElementById('delete-modal').classList.remove('hidden');
+}
+
+function setupConfirmModal() {
+  document.getElementById('btn-cancel-confirm').addEventListener('click', () => {
+    document.getElementById('confirm-modal').classList.add('hidden');
+    itemToClose = null;
+  });
+  
+  document.getElementById('btn-cancel-delete').addEventListener('click', () => {
+    document.getElementById('delete-modal').classList.add('hidden');
+    itemToDelete = null;
+  });
+  
+  document.getElementById('btn-execute-delete').addEventListener('click', () => {
+    if (!itemToDelete) return;
+    
+    document.getElementById('delete-modal').classList.add('hidden');
+    showLoading(true);
+    
+    if (typeof google === 'undefined') {
+       appData = appData.filter(d => d.Kode !== itemToDelete);
+       showLoading(false);
+       renderTable(currentView);
+       return;
+    }
+    
+    google.script.run
+      .withSuccessHandler(res => {
+        if(res.success) {
+           appData = appData.filter(d => d.Kode !== itemToDelete);
+           renderTable(currentView);
+           showLoading(false);
+        } else {
+           alert("Gagal: " + res.error);
+           showLoading(false);
+        }
+      })
+      .deleteData(itemToDelete);
+  });
+  
+  document.getElementById('btn-execute-close').addEventListener('click', () => {
+    if (!itemToClose) return;
+    
+    document.getElementById('confirm-modal').classList.add('hidden');
+    showLoading(true);
+    
+    if (typeof google === 'undefined') {
+       let item = appData.find(d => d.Kode === itemToClose);
+       if(item) item.Is_Closed = true;
+       showLoading(false);
+       renderTable(currentView);
+       return;
+    }
+    
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if(res.success) {
+           let item = appData.find(d => d.Kode === itemToClose);
+           if(item) item.Is_Closed = true;
+           renderTable(currentView);
+        } else {
+           alert("Gagal: " + res.error);
+        }
+      })
+      .markAsClosed(itemToClose);
+  });
+}
+
+// ==================== UPLOAD EXCEL / CSV ====================
+let uploadedFileData = null;
+
+function setupUploadModal() {
+  const modal = document.getElementById('upload-modal');
+  const btnOpen = document.getElementById('btn-upload-modal');
+  const btnClose = document.getElementById('close-upload');
+  const btnCancel = document.getElementById('btn-cancel-upload');
+  const btnProses = document.getElementById('btn-proses-upload');
+  
+  const zone = document.getElementById('upload-zone');
+  const fileInput = document.getElementById('file-input');
+  
+  btnOpen.addEventListener('click', () => {
+    modal.classList.remove('hidden');
+    resetUpload();
+    
+    // Auto select kategori berdasarkan view aktif
+    const sel = document.getElementById('kategori-input');
+    if (currentView === 'konfirmasi') sel.value = 'konfirmasi';
+    else if (currentView === 'order-part') sel.value = 'order_part';
+    else if (currentView === 'siap-diambil') sel.value = 'siap_diambil';
+  });
+  
+  const closeModal = () => modal.classList.add('hidden');
+  btnClose.addEventListener('click', closeModal);
+  btnCancel.addEventListener('click', closeModal);
+  
+  // Drag & Drop
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = 'var(--primary)'; });
+  zone.addEventListener('dragleave', () => zone.style.borderColor = 'var(--border-color)');
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--border-color)';
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  zone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+  
+  btnProses.addEventListener('click', processUpload);
+}
+
+function handleFile(file) {
+  document.getElementById('selected-file-name').textContent = file.name;
+  const reader = new FileReader();
+  
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, {type: 'array'});
+    
+    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+    const range = XLSX.utils.decode_range(firstSheet['!ref']);
+    
+    let headers = [];
+    let headerR = -1;
+    
+    // Cari baris header yang punya kolom 'Kode'
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            let cell = firstSheet[XLSX.utils.encode_cell({c:C, r:R})];
+            if (cell && cell.v === 'Kode') {
+                headerR = R;
+                break;
+            }
+        }
+        if (headerR !== -1) {
+            // Dapatkan semua header di baris ini
+            for (let C = range.s.c; C <= range.e.c; ++C) {
+                let cell = firstSheet[XLSX.utils.encode_cell({c:C, r:headerR})];
+                headers[C] = cell ? cell.v : undefined;
+            }
+            break;
+        }
+    }
+    
+    if (headerR === -1) {
+      showResultModal('error', 'Format file tidak dikenali. Kolom <strong>"Kode"</strong> tidak ditemukan di file Excel yang diunggah.');
+      return;
+    }
+    
+    const jsonResult = [];
+    for (let R = headerR + 1; R <= range.e.r; ++R) {
+        let obj = {};
+        let hasData = false;
+        let kodeVal = null;
+        
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            let h = headers[C];
+            if (h) {
+                let cell = firstSheet[XLSX.utils.encode_cell({c:C, r:R})];
+                let val = cell ? cell.v : "";
+                obj[h] = val;
+                if (val) hasData = true;
+                
+                // Ambil link jika ini adalah kolom Kode
+                if (h === 'Kode') {
+                    kodeVal = val;
+                    if (cell && cell.l && cell.l.Target) {
+                        obj['Link_Kode'] = cell.l.Target;
+                    }
+                }
+            }
+        }
+        if (hasData && kodeVal) {
+            jsonResult.push(obj);
+        }
+    }
+    
+    uploadedFileData = jsonResult;
+    document.getElementById('btn-proses-upload').disabled = false;
+  };
+  
+  reader.readAsArrayBuffer(file);
+}
+
+function processUpload() {
+  if (!uploadedFileData || uploadedFileData.length === 0) return;
+  
+  const kategori = document.getElementById('kategori-input').value;
+  const payload = {
+    kategori: kategori,
+    data: uploadedFileData
+  };
+  
+  document.getElementById('upload-modal').classList.add('hidden');
+  showLoading(true);
+  
+  if (typeof google === 'undefined') {
+    setTimeout(() => {
+      showResultModal('success', `Mock Sukses! Tambah: 3, Update: 1, Arsip: 0.`, kategori);
+      loadData();
+    }, 1000);
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) {
+        showResultModal('success', res.message, kategori);
+        loadData();
+      } else {
+        showResultModal('error', res.error || 'Terjadi kesalahan saat memproses data.');
+        showLoading(false);
+      }
+    })
+    .withFailureHandler(err => {
+      showResultModal('error', 'Koneksi ke server gagal. Silakan coba lagi.\n\nDetail: ' + err);
+      showLoading(false);
+    })
+    .processUploadedData(payload);
+}
+
+function resetUpload() {
+  uploadedFileData = null;
+  document.getElementById('file-input').value = "";
+  document.getElementById('selected-file-name').textContent = "";
+  document.getElementById('btn-proses-upload').disabled = true;
+}
+
+function showLoading(show) {
+  const overlay = document.getElementById('loading-overlay');
+  if (show) overlay.classList.remove('hidden');
+  else overlay.classList.add('hidden');
+}
+
+// ==================== IMPORT RESULT MODAL ====================
+function showResultModal(type, message, kategori) {
+  const modal = document.getElementById('import-result-modal');
+  const iconWrap = modal.querySelector('.modal-header > div:first-child');
+  const titleEl = modal.querySelector('h2');
+  const kategoriEl = document.getElementById('import-result-kategori');
+  const rawEl = document.getElementById('import-result-raw');
+  const countTambah = document.getElementById('import-count-tambah');
+  const countUpdate = document.getElementById('import-count-update');
+  const countArsip = document.getElementById('import-count-arsip');
+  const statsGrid = modal.querySelector('[style*="grid-template-columns"]');
+  
+  if (type === 'error') {
+    // Mode error
+    iconWrap.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)';
+    iconWrap.innerHTML = '<i class="fas fa-exclamation-triangle" style="font-size: 24px; color: white;"></i>';
+    titleEl.textContent = 'Import Gagal';
+    titleEl.style.color = 'var(--danger, #ef4444)';
+    kategoriEl.textContent = '';
+    rawEl.textContent = message || 'Terjadi kesalahan.';
+    if (statsGrid) statsGrid.style.display = 'none';
+  } else {
+    // Mode sukses - reset icon
+    iconWrap.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    iconWrap.innerHTML = '<i class="fas fa-check" style="font-size: 24px; color: white;"></i>';
+    titleEl.textContent = 'Import Berhasil!';
+    titleEl.style.color = 'var(--text-main)';
+    if (statsGrid) statsGrid.style.display = 'grid';
+    
+    // Parse angka dari pesan
+    // Format: "Berhasil memproses massal instan! Tambah: X, Update: Y, Arsip: Z."
+    const mTambah = message.match(/Tambah:\s*(\d+)/i);
+    const mUpdate = message.match(/Update:\s*(\d+)/i);
+    const mArsip  = message.match(/Arsip:\s*(\d+)/i);
+    
+    countTambah.textContent = mTambah ? mTambah[1] : '-';
+    countUpdate.textContent = mUpdate ? mUpdate[1] : '-';
+    countArsip.textContent  = mArsip  ? mArsip[1]  : '-';
+    
+    // Tampilkan nama kategori yang mudah dibaca
+    const katMap = { 'konfirmasi': 'Menunggu Konfirmasi', 'order_part': 'Order Part', 'siap_diambil': 'Siap Diambil' };
+    kategoriEl.textContent = kategori ? `Kategori: ${katMap[kategori] || kategori}` : '';
+    rawEl.textContent = message;
+  }
+  
+  modal.classList.remove('hidden');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const closeImport = () => document.getElementById('import-result-modal').classList.add('hidden');
+  const closeBtn = document.getElementById('close-import-result');
+  const okBtn = document.getElementById('btn-ok-import-result');
+  if (closeBtn) closeBtn.addEventListener('click', closeImport);
+  if (okBtn) okBtn.addEventListener('click', closeImport);
+});
+
+// ==================== SETTINGS & HIGHLIGHT ====================
+function openSettingsModal() {
+  renderSettingsTable();
+  loadUsers(); // Add this line
+  document.getElementById('settings-modal').classList.remove('hidden');
+}
+
+document.getElementById('close-settings').addEventListener('click', () => {
+  document.getElementById('settings-modal').classList.add('hidden');
+});
+document.getElementById('btn-cancel-settings').addEventListener('click', () => {
+  document.getElementById('settings-modal').classList.add('hidden');
+});
+
+function renderSettingsTable() {
+  const tbody = document.getElementById('settings-table-body');
+  let html = '';
+  appSettings.forEach((setting, index) => {
+    html += `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+          <input type="text" class="form-control setting-keyword" value="${setting.keyword}" placeholder="Ketik kata kunci...">
+        </td>
+        <td style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: center;">
+          <input type="color" class="setting-color" value="${setting.color}" style="width: 40px; height: 35px; border: none; border-radius: 4px; cursor: pointer;">
+        </td>
+        <td style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: center;">
+          <button class="btn btn-danger btn-sm" onclick="removeSettingsRow(this)"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+function addSettingsRow() {
+  const tbody = document.getElementById('settings-table-body');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="padding: 8px; border-bottom: 1px solid var(--border-color);">
+      <input type="text" class="form-control setting-keyword" placeholder="Ketik kata kunci...">
+    </td>
+    <td style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: center;">
+      <input type="color" class="setting-color" value="#ef4444" style="width: 40px; height: 35px; border: none; border-radius: 4px; cursor: pointer;">
+    </td>
+    <td style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: center;">
+      <button class="btn btn-danger btn-sm" onclick="removeSettingsRow(this)"><i class="fas fa-trash"></i></button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function removeSettingsRow(btn) {
+  btn.closest('tr').remove();
+}
+
+document.getElementById('btn-save-settings').addEventListener('click', () => {
+  const rows = document.querySelectorAll('#settings-table-body tr');
+  let newSettings = [];
+  rows.forEach(tr => {
+    const keyword = tr.querySelector('.setting-keyword').value.trim();
+    const color = tr.querySelector('.setting-color').value;
+    if (keyword) {
+      newSettings.push({ keyword, color });
+    }
+  });
+  
+  const btnSave = document.getElementById('btn-save-settings');
+  btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+  btnSave.disabled = true;
+  
+  if (typeof google === 'undefined') {
+    appSettings = newSettings;
+    setTimeout(() => {
+      btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan Pengaturan';
+      btnSave.disabled = false;
+      document.getElementById('settings-modal').classList.add('hidden');
+      highlightAllInputs();
+    }, 500);
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan Pengaturan';
+      btnSave.disabled = false;
+      if(res.success) {
+        appSettings = newSettings;
+        document.getElementById('settings-modal').classList.add('hidden');
+        highlightAllInputs();
+      } else {
+        alert("Gagal menyimpan: " + res.error);
+      }
+    })
+    .withFailureHandler(err => {
+      btnSave.innerHTML = '<i class="fas fa-save"></i> Simpan Pengaturan';
+      btnSave.disabled = false;
+      alert("Error jaringan: " + err);
+    })
+    .saveSettings(newSettings);
+});
+
+// ==================== USER MANAGEMENT ====================
+let appUsers = [];
+
+function loadUsers() {
+  const tbody = document.getElementById('user-management-table-body');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 10px;"><i class="fas fa-spinner fa-spin"></i> Memuat data user...</td></tr>';
+  
+  if (typeof google === 'undefined') {
+    appUsers = ["Admin", "User1"];
+    renderUsers();
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      if (res.success) {
+        appUsers = res.users;
+        renderUsers();
+      } else {
+        tbody.innerHTML = `<tr><td colspan="2" style="color:var(--danger); text-align:center;">Gagal memuat: ${res.error}</td></tr>`;
+      }
+    })
+    .withFailureHandler(err => {
+      tbody.innerHTML = `<tr><td colspan="2" style="color:var(--danger); text-align:center;">Error: ${err}</td></tr>`;
+    })
+    .getAllUsers();
+}
+
+function renderUsers() {
+  const tbody = document.getElementById('user-management-table-body');
+  if (!appUsers || appUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 10px;">Tidak ada data user.</td></tr>';
+    return;
+  }
+  
+  let html = '';
+  appUsers.forEach(u => {
+    html += `
+      <tr>
+        <td style="padding: 8px; border-bottom: 1px solid var(--border-color); font-weight: 500;">
+          <i class="fas fa-user-circle" style="color: var(--primary); margin-right: 5px;"></i> ${u}
+        </td>
+        <td style="padding: 8px; border-bottom: 1px solid var(--border-color); text-align: center;">
+          <button class="btn btn-outline btn-sm" onclick="editPassword('${u}')" title="Edit Password" style="padding: 4px 8px; margin-right: 5px;"><i class="fas fa-key"></i></button>
+          <button class="btn btn-danger btn-sm" onclick="deleteUser('${u}')" title="Hapus User" style="padding: 4px 8px;"><i class="fas fa-trash"></i></button>
+        </td>
+      </tr>
+    `;
+  });
+  tbody.innerHTML = html;
+}
+
+document.getElementById('btn-add-user').addEventListener('click', () => {
+  const user = document.getElementById('new-username').value.trim();
+  const pass = document.getElementById('new-password').value.trim();
+  
+  if (!user || !pass) {
+    alert('Username dan Password tidak boleh kosong!');
+    return;
+  }
+  
+  const btn = document.getElementById('btn-add-user');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+  btn.disabled = true;
+  
+  if (typeof google === 'undefined') {
+    appUsers.push(user);
+    document.getElementById('new-username').value = '';
+    document.getElementById('new-password').value = '';
+    btn.innerHTML = '<i class="fas fa-user-plus"></i> Tambah User';
+    btn.disabled = false;
+    renderUsers();
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Tambah User';
+      btn.disabled = false;
+      if (res.success) {
+        document.getElementById('new-username').value = '';
+        document.getElementById('new-password').value = '';
+        loadUsers(); // reload list
+        alert(res.message);
+      } else {
+        alert("Gagal menambah user: " + res.error);
+      }
+    })
+    .withFailureHandler(err => {
+      btn.innerHTML = '<i class="fas fa-user-plus"></i> Tambah User';
+      btn.disabled = false;
+      alert("Error jaringan: " + err);
+    })
+    .addNewUser(user, pass);
+});
+
+function editPassword(username) {
+  const newPass = prompt(`Masukkan password baru untuk user: ${username}`);
+  if (newPass === null || newPass.trim() === "") return;
+  
+  showLoading(true);
+  if (typeof google === 'undefined') {
+    setTimeout(() => { showLoading(false); alert("Password berhasil diubah (Mock)"); }, 500);
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      showLoading(false);
+      if(res.success) {
+        alert(res.message);
+      } else {
+        alert("Gagal ubah password: " + res.error);
+      }
+    })
+    .withFailureHandler(err => {
+      showLoading(false);
+      alert("Error: " + err);
+    })
+    .updateUserPassword(username, newPass.trim());
+}
+
+function deleteUser(username) {
+  if (!confirm(`Yakin ingin menghapus akun ${username}?`)) return;
+  
+  showLoading(true);
+  if (typeof google === 'undefined') {
+    setTimeout(() => { 
+      showLoading(false); 
+      appUsers = appUsers.filter(u => u !== username);
+      renderUsers();
+      alert("User dihapus (Mock)"); 
+    }, 500);
+    return;
+  }
+  
+  google.script.run
+    .withSuccessHandler(res => {
+      showLoading(false);
+      if(res.success) {
+        loadUsers();
+        alert(res.message);
+      } else {
+        alert("Gagal menghapus: " + res.error);
+      }
+    })
+    .withFailureHandler(err => {
+      showLoading(false);
+      alert("Error: " + err);
+    })
+    .removeUser(username);
+}
+
+
+function getContrastYIQ(hexcolor){
+    hexcolor = hexcolor.replace("#", "");
+    var r = parseInt(hexcolor.substr(0,2),16);
+    var g = parseInt(hexcolor.substr(2,2),16);
+    var b = parseInt(hexcolor.substr(4,2),16);
+    var yiq = ((r*299)+(g*587)+(b*114))/1000;
+    return (yiq >= 128) ? 'black' : 'white';
+}
+
+function applyHighlight(inputElem) {
+  if (!appSettings || appSettings.length === 0) {
+    inputElem.style.backgroundColor = '';
+    inputElem.style.color = '';
+    return;
+  }
+  
+  const val = inputElem.value.toLowerCase();
+  if (!val) {
+    inputElem.style.backgroundColor = '';
+    inputElem.style.color = '';
+    return;
+  }
+  
+  let appliedColor = null;
+  for (let i = 0; i < appSettings.length; i++) {
+    if (val.includes(appSettings[i].keyword.toLowerCase())) {
+      appliedColor = appSettings[i].color;
+      break;
+    }
+  }
+  
+  if (appliedColor) {
+    inputElem.style.backgroundColor = appliedColor;
+    inputElem.style.color = getContrastYIQ(appliedColor);
+  } else {
+    inputElem.style.backgroundColor = '';
+    inputElem.style.color = '';
+  }
+}
+
+// ==================== ALOKASI PART & STOCK LOGIC ====================
+function setupAlokasi() {
+  // 1. Import Stock Logic
+  const importModal = document.getElementById('import-stock-modal');
+  const closeImportBtn = document.getElementById('close-import-stock');
+  const zoneStock = document.getElementById('upload-zone-stock');
+  const fileInputStock = document.getElementById('file-upload-stock');
+  
+  if (closeImportBtn && importModal) {
+    closeImportBtn.addEventListener('click', () => {
+      importModal.classList.add('hidden');
+      document.getElementById('selected-file-name-stock').textContent = '';
+      if (fileInputStock) fileInputStock.value = '';
+    });
+  }
+  
+  const handleStockFile = (file) => {
+    if (!file) return;
+    
+    document.getElementById('selected-file-name-stock').textContent = file.name;
+    importModal.classList.add('hidden');
+    showLoading(true);
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+      
+      let payloadData = [];
+      for (let i = 1; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        const noSeri = row[10] ? row[10].toString().trim() : "";
+        const namaBarang = row[8] ? row[8].toString().trim() : "";
+        const kodeBarang = row[6] ? row[6].toString().trim() : "";
+        
+        if (noSeri !== "") {
+          payloadData.push([noSeri, namaBarang, kodeBarang]);
+        }
+      }
+      
+      if (payloadData.length === 0) {
+        alert("Tidak ada data valid yang ditemukan pada file.");
+        showLoading(false);
+        return;
+      }
+      
+      if (typeof google === 'undefined') {
+        appStockData = payloadData.map(d => ({ SN: d[0], Nama_Barang: d[1], Kode_Barang: d[2] }));
+        showLoading(false);
+        alert("Import Stock berhasil (Mock)!");
+        return;
+      }
+      
+      google.script.run
+        .withSuccessHandler(res => {
+          if (res.success) {
+            google.script.run
+              .withSuccessHandler(res2 => {
+                if (res2.success) appStockData = res2.data;
+                showLoading(false);
+                alert("Import Stock Berhasil!");
+              })
+              .getAllStock();
+          } else {
+            showLoading(false);
+            alert("Gagal Import: " + res.error);
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          alert("Gagal terhubung: " + err);
+        })
+        .importStockData(payloadData);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  
+  if (zoneStock && fileInputStock) {
+    zoneStock.addEventListener('dragover', (e) => { e.preventDefault(); zoneStock.style.borderColor = 'var(--primary)'; });
+    zoneStock.addEventListener('dragleave', () => zoneStock.style.borderColor = 'var(--border-color)');
+    zoneStock.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zoneStock.style.borderColor = 'var(--border-color)';
+      if (e.dataTransfer.files.length) handleStockFile(e.dataTransfer.files[0]);
+    });
+    zoneStock.addEventListener('click', () => fileInputStock.click());
+    
+    fileInputStock.addEventListener('change', (e) => {
+      if (e.target.files.length) handleStockFile(e.target.files[0]);
+    });
+  }
+  
+  // 2. Alokasi Modal Logic
+  const alokasiModal = document.getElementById('alokasi-modal');
+  const closeAlokasi = () => { alokasiModal.classList.add('hidden'); itemToAlokasi = null; };
+  
+  document.getElementById('close-alokasi').addEventListener('click', closeAlokasi);
+  document.getElementById('btn-cancel-alokasi').addEventListener('click', closeAlokasi);
+  
+  const snInput = document.getElementById('alokasi-sn');
+  const namaInput = document.getElementById('alokasi-nama-barang');
+  const warningMsg = document.getElementById('alokasi-warning');
+  const btnSave = document.getElementById('btn-save-alokasi');
+  
+  snInput.addEventListener('keyup', (e) => {
+    const val = e.target.value.trim();
+    if (val === "") {
+      namaInput.value = "";
+      warningMsg.classList.add('hidden');
+      btnSave.disabled = true;
+      return;
+    }
+    
+    // Cari SN di appStockData
+    const found = appStockData.find(s => s.SN === val);
+    if (found) {
+      namaInput.value = found.Nama_Barang;
+      warningMsg.classList.add('hidden');
+      btnSave.disabled = false;
+    } else {
+      namaInput.value = "";
+      warningMsg.classList.remove('hidden');
+      btnSave.disabled = true;
+    }
+  });
+  
+  btnSave.addEventListener('click', () => {
+    if (!itemToAlokasi) return;
+    
+    const sn = snInput.value.trim();
+    const nama = namaInput.value.trim();
+    const savedKode = itemToAlokasi; // Simpan ke variabel lokal SEBELUM closeAlokasi() menghapusnya
+    
+    let today = new Date();
+    let dStr = today.getDate().toString().padStart(2, '0') + '-' + 
+               (today.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+               today.getFullYear();
+               
+    showLoading(true);
+    closeAlokasi();
+    
+    if (typeof google === 'undefined') {
+       appAlokasiData.push({ Tanda_Terima: savedKode, SN: sn, Nama_Barang: nama, Tanggal_Alokasi: dStr });
+       showLoading(false);
+       renderAlokasiTable();
+       return;
+    }
+    
+    google.script.run
+      .withFailureHandler(err => {
+         showLoading(false);
+         alert("Terjadi kesalahan jaringan atau script belum disimpan di Code.gs: " + err);
+      })
+      .withSuccessHandler(res => {
+         if (res.success) {
+            appAlokasiData.push({ Tanda_Terima: savedKode, SN: sn, Nama_Barang: nama, Tanggal_Alokasi: dStr });
+            showLoading(false);
+            renderAlokasiTable();
+         } else {
+            showLoading(false);
+            alert("Gagal menyimpan alokasi: " + res.error);
+         }
+      })
+      .saveAlokasi(savedKode, sn, nama, dStr);
+  });
+}
+
+function openAlokasiModal(kode) {
+  let displayKode = kode || '-';
+  
+  itemToAlokasi = displayKode;
+  document.getElementById('alokasi-kode').textContent = displayKode;
+  document.getElementById('alokasi-sn').value = '';
+  document.getElementById('alokasi-nama-barang').value = '';
+  document.getElementById('alokasi-warning').classList.add('hidden');
+  document.getElementById('btn-save-alokasi').disabled = true;
+  document.getElementById('alokasi-modal').classList.remove('hidden');
+}
+
+function highlightAllInputs() {
+  const inputs = document.querySelectorAll('.highlightable');
+  inputs.forEach(input => {
+    applyHighlight(input);
+  });
+}
+
+function autoResize(textarea) {
+  textarea.style.height = 'auto';
+  textarea.style.height = (textarea.scrollHeight) + 'px';
+}
+
+function renderCabangSelect() {
+  const select = document.getElementById('alokasi-cabang-select');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- Pilih Cabang --</option>';
+  appCabangData.forEach(c => {
+    select.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+  select.innerHTML += '<option value="TAMBAH_BARU" style="font-weight:bold; color:var(--primary);">+ Tambah Cabang Baru...</option>';
+}
+
+function setupAlokasiCabang() {
+  const modal = document.getElementById('alokasi-cabang-modal');
+  const btnOpen = document.getElementById('btn-alokasi-cabang');
+  const btnClose = document.getElementById('close-alokasi-cabang');
+  const btnCancel = document.getElementById('btn-cancel-alokasi-cabang');
+  const btnSave = document.getElementById('btn-save-alokasi-cabang');
+  
+  const select = document.getElementById('alokasi-cabang-select');
+  const ioInput = document.getElementById('alokasi-cabang-io');
+  const snInput = document.getElementById('alokasi-cabang-sn');
+  const previewDiv = document.getElementById('alokasi-cabang-preview');
+  const previewBody = document.getElementById('alokasi-cabang-preview-body');
+  
+  let currentPreviewItems = [];
+  
+  const closeModal = () => {
+    modal.classList.add('hidden');
+    select.value = "";
+    if (ioInput) ioInput.value = "";
+    snInput.value = "";
+    previewDiv.style.display = 'none';
+    previewBody.innerHTML = '';
+    currentPreviewItems = [];
+    btnSave.disabled = true;
+  };
+
+  if (btnOpen) btnOpen.addEventListener('click', () => {
+    renderCabangSelect();
+    modal.classList.remove('hidden');
+  });
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+  
+  // Handle Tambah Cabang Baru
+  select.addEventListener('change', (e) => {
+    if (e.target.value === 'TAMBAH_BARU') {
+      const newCabang = prompt("Masukkan nama Cabang Baru:");
+      if (newCabang && newCabang.trim() !== '') {
+        const val = newCabang.trim();
+        showLoading(true);
+        google.script.run
+          .withSuccessHandler(res => {
+            showLoading(false);
+            if (res.success) {
+              appCabangData.push(res.namaCabang);
+              renderCabangSelect();
+              select.value = res.namaCabang; // auto select
+            } else {
+              alert("Gagal menyimpan cabang: " + res.error);
+              select.value = "";
+            }
+          })
+          .withFailureHandler(err => {
+            showLoading(false);
+            alert("Error: " + err);
+            select.value = "";
+          })
+          .saveCabang(val);
+      } else {
+        select.value = "";
+      }
+    }
+    validateSaveBtn();
+  });
+  
+  // Live Preview SN
+  snInput.addEventListener('input', () => {
+    const rawVal = snInput.value;
+    if (!rawVal.trim()) {
+      previewDiv.style.display = 'none';
+      currentPreviewItems = [];
+      validateSaveBtn();
+      return;
+    }
+    
+    // Pisahkan dengan koma atau baris baru, hapus spasi ekstra, buang yg kosong
+    const snList = rawVal.split(/[\n,]+/).map(s => s.trim()).filter(s => s !== '');
+    
+    if (snList.length === 0) {
+      previewDiv.style.display = 'none';
+      currentPreviewItems = [];
+      validateSaveBtn();
+      return;
+    }
+    
+    previewDiv.style.display = 'block';
+    previewBody.innerHTML = '';
+    currentPreviewItems = [];
+    
+    let allFound = true;
+    
+    snList.forEach(sn => {
+      const found = appStockData.find(s => s.SN === sn);
+      let statusHtml, namaHtml;
+      
+      if (found) {
+        namaHtml = found.Nama_Barang;
+        statusHtml = '<span style="color:var(--success); font-weight:bold;"><i class="fas fa-check-circle"></i> Ditemukan</span>';
+        currentPreviewItems.push({ SN: sn, Nama_Barang: found.Nama_Barang });
+      } else {
+        allFound = false;
+        namaHtml = '-';
+        statusHtml = '<span style="color:var(--danger); font-weight:bold;"><i class="fas fa-times-circle"></i> Tidak ditemukan di Stock</span>';
+        currentPreviewItems.push({ SN: sn, NotFound: true });
+      }
+      
+      const tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid var(--border-color)';
+      if (!found) tr.style.backgroundColor = '#fee2e2'; // Light red background
+      
+      tr.innerHTML = `
+        <td style="padding: 8px;">${sn}</td>
+        <td style="padding: 8px;">${namaHtml}</td>
+        <td style="padding: 8px;">${statusHtml}</td>
+      `;
+      previewBody.appendChild(tr);
+    });
+    
+    validateSaveBtn();
+  });
+  
+  function validateSaveBtn() {
+    const isCabangSelected = select.value && select.value !== 'TAMBAH_BARU';
+    const hasItems = currentPreviewItems.length > 0;
+    const allFound = currentPreviewItems.every(item => !item.NotFound);
+    
+    btnSave.disabled = !(isCabangSelected && hasItems && allFound);
+  }
+  
+  // Save Batch
+  btnSave.addEventListener('click', () => {
+    if (btnSave.disabled) return;
+    
+    const cabang = select.value;
+    const ioValue = ioInput ? ioInput.value.trim() : "";
+    
+    let today = new Date();
+    let dStr = today.getDate().toString().padStart(2, '0') + '/' + 
+              (today.getMonth() + 1).toString().padStart(2, '0') + '/' + 
+              today.getFullYear() + ' ' + 
+              today.getHours().toString().padStart(2, '0') + ':' + 
+              today.getMinutes().toString().padStart(2, '0');
+              
+    const itemsToSave = currentPreviewItems.map(item => ({
+      Tanda_Terima: cabang,
+      SN: item.SN,
+      Nama_Barang: item.Nama_Barang,
+      Tanggal_Alokasi: dStr,
+      Keterangan: ioValue
+    }));
+    
+    showLoading(true);
+    google.script.run
+      .withSuccessHandler(res => {
+        showLoading(false);
+        if (res.success) {
+          // Update local data
+          itemsToSave.forEach(it => {
+            appAlokasiData.push({
+              "Tanda_Terima": it.Tanda_Terima,
+              "SN": it.SN,
+              "Nama_Barang": it.Nama_Barang,
+              "Tanggal_Alokasi": it.Tanggal_Alokasi,
+              "Keterangan": it.Keterangan
+            });
+          });
+          
+          closeModal();
+          alert("Alokasi Cabang berhasil disimpan!");
+          
+          if (currentView === 'alokasi-part') {
+            renderAlokasiTable();
+          }
+        } else {
+          alert("Gagal menyimpan alokasi: " + res.error);
+        }
+      })
+      .withFailureHandler(err => {
+        showLoading(false);
+        alert("Error saat menghubungi server: " + err);
+      })
+      .saveAlokasiBatch(itemsToSave);
+  });
+}
+
+</script>

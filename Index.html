@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ELS Admin Service Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+  <?!= include('Stylesheet'); ?>
+</head>
+<body>
+  <!-- Login Screen -->
+  <div id="login-screen" class="login-wrapper hidden">
+    <div class="login-card">
+      <div class="brand" style="justify-content: center; margin-bottom: 20px;">
+        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTn_zSpGdTkwiGoPqLwZAqzNbpmgUZ8lpTw9cuLwKFI1w&s=10" alt="Logo" style="height: 60px; border-radius: 8px;">
+      </div>
+      <h2 style="text-align: center; margin-bottom: 25px; color: var(--text-main);">Selamat Datang</h2>
+      
+      <div id="login-alert" class="hidden" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; text-align: center; border: 1px solid var(--danger);"></div>
+      
+      <div style="margin-bottom: 15px;">
+        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Username</label>
+        <input type="text" id="login-username" class="form-control" placeholder="Masukkan username">
+      </div>
+      <div style="margin-bottom: 25px;">
+        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Password</label>
+        <div style="position: relative;">
+          <input type="password" id="login-password" class="form-control" placeholder="Masukkan password" style="padding-right: 40px;">
+          <i class="fas fa-eye" id="toggle-password" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
+        </div>
+      </div>
+      <button id="btn-login" class="btn btn-primary" style="width: 100%; justify-content: center;">Masuk</button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app-content" class="hidden">
+    <!-- Top Navigation -->
+  <nav class="topbar">
+    <div class="topbar-mobile-header">
+      <div class="brand">
+        <img src="data:image/png;base64,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" alt="Logo" style="height: 35px; border-radius: 6px; margin-right: 1px;">
+        ELS ADMIN-OOW
+      </div>
+      <button id="hamburger-btn" class="hamburger-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    
+    <ul class="nav-menu" id="nav-menu">
+      <li class="nav-item active" data-target="dashboard">Dashboard</li>
+      <li class="nav-item" data-target="konfirmasi">Konfirmasi</li>
+      <li class="nav-item" data-target="order-part">Order Part</li>
+      <li class="nav-item" data-target="alokasi-part">Alokasi Part</li>
+      <li class="nav-item" data-target="siap-diambil">Siap Diambil</li>
+      <li class="nav-item" data-target="so">Stock Opname (SO)</li>
+      <li class="nav-item" data-target="arsip">Arsip Selesai</li>
+    </ul>
+
+    <div class="topbar-right" id="topbar-right" style="position: relative;">
+      <div class="user-profile" id="user-profile-badge" style="cursor: pointer;">
+        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
+          <div class="user-avatar" id="user-avatar-initial">A</div>
+          <div id="avatar-notification-badge" class="hidden" style="position: absolute; top: -4px; right: -4px; background: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid white; z-index: 2;">0</div>
+        </div>
+        <div class="user-name" id="user-avatar-name">Admin</div>
+      </div>
+      
+      <!-- Notification Dropdown -->
+      <div id="notif-dropdown" class="hidden" style="position: absolute; top: 120%; right: 100px; width: 320px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--border-color); z-index: 1000; overflow: hidden;">
+          <div style="padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 14px; background: #f8fafc;">Notifikasi Konfirmasi</div>
+          <div id="notif-list" style="padding: 15px; font-size: 13px; color: var(--text-dark); display: flex; align-items: center; gap: 12px; background: white; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'" onclick="document.querySelector('.nav-item[data-target=&quot;siap-diambil&quot;]').click(); document.getElementById('notif-dropdown').classList.add('hidden');">
+              <!-- Content injected by JS -->
+          </div>
+      </div>
+
+      <button class="btn btn-outline btn-sm" onclick="openSettingsModal()" style="border: none; padding: 6px; margin-right: 5px;"><i class="fas fa-cog"></i></button>
+      <button id="btn-logout" class="btn btn-outline btn-sm"><i class="fas fa-sign-out-alt"></i> Keluar</button>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="main-content">
+    
+    <div id="loading-overlay" class="loading-overlay hidden">
+      <div class="spinner"></div>
+      <p style="font-weight: 600; color: var(--primary);">Memproses data...</p>
+    </div>
+
+    <!-- Dashboard View -->
+    <section id="dashboard" class="view-section active">
+      <div class="welcome-banner">
+        <div>
+          <h1>Halo Admin!</h1>
+          <p>Berikut ringkasan status service ELS untuk periode aktif.</p>
+        </div>
+        <div class="clock-widget">
+          <div id="live-time" class="time-display">00:00:00</div>
+          <div id="live-date" class="date-display">Memuat tanggal...</div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon konfirmasi-icon"><i class="fas fa-clock"></i></div>
+          <div class="stat-info">
+            <h3>Menunggu Konfirmasi</h3>
+            <p id="count-konfirmasi">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon order-icon"><i class="fas fa-cogs"></i></div>
+          <div class="stat-info">
+            <h3>Order Part</h3>
+            <p id="count-order">0</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon siap-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-info">
+            <h3>Siap Diambil</h3>
+            <p id="count-siap">0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kebutuhan Part List -->
+      <div class="dashboard-list-container">
+        <div class="list-header">
+          <h2><i class="fas fa-clipboard-list" style="color: var(--primary);"></i> Daftar Part Yang Harus Diorder Hari Ini</h2>
+        </div>
+        
+        <div class="part-split-container">
+          <!-- Kolom IW -->
+          <div class="part-column">
+            <h3 class="part-column-title"><i class="fas fa-shield-alt" style="color: #10b981;"></i> Part Garansi (IW)</h3>
+            <div id="part-list-iw" class="part-list-grid">
+               <!-- Rendered via JS -->
+            </div>
+          </div>
+          
+          <!-- Kolom OOW -->
+          <div class="part-column">
+            <h3 class="part-column-title"><i class="fas fa-tools" style="color: #f59e0b;"></i> Part Non-Garansi (OOW)</h3>
+            <div id="part-list-oow" class="part-list-grid">
+               <!-- Rendered via JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Reusable Table Container -->
+    <section id="table-view" class="view-section hidden">
+      <div class="table-card">
+        <div class="table-header-bar">
+          <h2>
+            <span id="table-title">Data Tabel</span> 
+            <span class="badge-count" id="table-count">0</span>
+            <span id="siap-diambil-stats" class="hidden" style="font-size: 13px; font-weight: normal; margin-left: 15px; color: var(--text-muted);">
+              (Siap Diambil: <strong id="count-siap-table" style="color: var(--secondary);">0</strong> | Cancel: <strong id="count-cancel" style="color: var(--danger);">0</strong>)
+            </span>
+          </h2>
+          <div class="table-controls">
+            <div id="arsip-filters" class="hidden" style="display: flex; gap: 10px;">
+              <select id="filter-kategori-arsip" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="">Semua Kategori</option>
+                 <option value="konfirmasi">Konfirmasi</option>
+                 <option value="order_part">Order Part</option>
+                 <option value="siap_diambil">Siap Diambil</option>
+              </select>
+              <select id="filter-bulan" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="">Semua Bulan</option>
+                 <option value="01">Januari</option>
+                 <option value="02">Februari</option>
+                 <option value="03">Maret</option>
+                 <option value="04">April</option>
+                 <option value="05">Mei</option>
+                 <option value="06">Juni</option>
+                 <option value="07">Juli</option>
+                 <option value="08">Agustus</option>
+                 <option value="09">September</option>
+                 <option value="10">Oktober</option>
+                 <option value="11">November</option>
+                 <option value="12">Desember</option>
+              </select>
+              <select id="filter-tahun" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="">Semua Tahun</option>
+                 <option value="2026">2026</option>
+                 <option value="2025">2025</option>
+                 <option value="2024">2024</option>
+              </select>
+            </div>
+            <div id="garansi-filters" class="hidden" style="margin-right: 10px;">
+              <select id="filter-garansi" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="">Semua Garansi</option>
+                 <option value="IW">IW</option>
+                 <option value="OOW">OOW</option>
+              </select>
+            </div>
+            <div id="konfirmasi-filters" class="hidden" style="margin-right: 10px;">
+              <select id="filter-konfirmasi" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="">Semua Konfirmasi</option>
+                 <option value="Sudah">Sudah Konfirmasi</option>
+                 <option value="Belum">Belum Konfirmasi</option>
+              </select>
+            </div>
+            <div id="so-filters" class="hidden" style="margin-right: 10px;">
+              <select id="filter-so" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="">Semua SO</option>
+                 <option value="true">Ditemukan</option>
+                 <option value="false">Belum Ditemukan</option>
+              </select>
+            </div>
+            <div id="sort-filters" style="margin-right: 10px;">
+              <select id="filter-sort" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+                 <option value="terbaru">Sort: Terbaru (Default)</option>
+                 <option value="terlama">Sort: Terlama</option>
+                 <option value="az">Sort: Kode A-Z</option>
+                 <option value="za">Sort: Kode Z-A</option>
+              </select>
+            </div>
+            <div class="search-bar" style="height: 35px;">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-input" placeholder="Cari Kode, Pelanggan, Unit / SN...">
+            </div>
+            <!-- Tombol khusus Order Part -->
+            <button id="btn-export-part" class="btn btn-outline hidden" style="height: 35px;">
+              <i class="fas fa-file-export"></i> Export Part (WA)
+            </button>
+            <!-- Tombol Upload -->
+            <button id="btn-upload-modal" class="btn btn-primary hidden-on-arsip" style="height: 35px;">
+              <i class="fas fa-cloud-upload-alt"></i> Import Data
+            </button>
+          </div>
+        </div>
+
+        <div class="table-scroll-container">
+          <table id="data-table">
+            <thead>
+              <tr id="table-head">
+                <!-- Headers -->
+              </tr>
+            </thead>
+            <tbody id="table-body">
+                <!-- Rows -->
+            </tbody>
+          </table>
+          
+          <div id="empty-state" class="hidden" style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 15px; color: #cbd5e1;"></i>
+            <p>Tidak ada data untuk kategori ini.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alokasi Part View -->
+    <section id="alokasi-part" class="view-section hidden">
+      <div class="table-card">
+        <div class="table-header-bar">
+          <h2>Data Alokasi Part <span class="badge-count" id="table-count-alokasi">0</span></h2>
+          <div class="table-controls">
+            <div class="search-bar" style="height: 35px;">
+              <i class="fas fa-search"></i>
+              <input type="text" id="search-alokasi" placeholder="Cari SN atau Kode...">
+            </div>
+            <button id="btn-alokasi-cabang" class="btn btn-success" style="height: 35px; margin-right: 5px;">
+              <i class="fas fa-truck-loading"></i> Alokasi Cabang
+            </button>
+            <button id="btn-import-stock" class="btn btn-primary" style="height: 35px;" onclick="document.getElementById('import-stock-modal').classList.remove('hidden')">
+              <i class="fas fa-cloud-upload-alt"></i> Import Data Stock
+            </button>
+          </div>
+        </div>
+
+        <div class="table-scroll-container">
+          <table id="alokasi-table">
+            <thead>
+              <tr>
+                <th style="width: 200px;">Nomor Tanda Terima</th>
+                <th style="width: 180px;">SN (No Seri/Produksi)</th>
+                <th>Nama Barang</th>
+                <th style="width: 140px;">Tanggal Alokasi</th>
+                <th style="width: 200px;">Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="alokasi-table-body">
+                <!-- Rows -->
+            </tbody>
+          </table>
+          
+          <div id="empty-state-alokasi" class="hidden" style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <i class="fas fa-folder-open" style="font-size: 40px; margin-bottom: 15px; color: #cbd5e1;"></i>
+            <p>Belum ada data alokasi.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Upload Modal -->
+  <div id="upload-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Import Data Web ELS</h2>
+        <button class="close-btn" id="close-upload"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="upload-zone" id="upload-zone">
+          <i class="fas fa-file-excel upload-icon"></i>
+          <p class="text-muted">Drag & drop file Excel di sini atau klik untuk memilih file</p>
+          <input type="file" id="file-input" accept=".xlsx, .xls, .csv" class="hidden">
+          <p class="file-name" id="selected-file-name"></p>
+        </div>
+        <div class="kategori-select">
+          <label class="text-muted" style="display:block; margin-bottom: 8px; font-weight: 500;">Kategori Data Tujuan:</label>
+          <select id="kategori-input" class="form-control">
+            <option value="konfirmasi">Data Konfirmasi</option>
+            <option value="order_part">Data Order Part</option>
+            <option value="siap_diambil">Data Siap Diambil</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-upload">Batal</button>
+        <button class="btn btn-primary" id="btn-proses-upload" disabled>Proses Import</button>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Import Stock Modal -->
+  <div id="import-stock-modal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Import Data Stock</h2>
+        <button class="close-btn" id="close-import-stock"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="upload-zone" id="upload-zone-stock">
+          <i class="fas fa-file-excel upload-icon"></i>
+          <p class="text-muted">Drag & drop file Excel Stock di sini atau klik untuk memilih file</p>
+          <input type="file" id="file-upload-stock" accept=".xlsx, .xls, .csv" class="hidden">
+          <p class="file-name" id="selected-file-name-stock"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- SN List Modal -->
+  <div id="sn-list-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Daftar SN Alokasi</h2>
+        <button class="close-btn" id="close-sn-list"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="table-scroll-container" style="max-height: 400px; margin-top: 0;">
+          <table id="sn-list-table">
+            <thead>
+              <tr>
+                <th>SN (No Seri)</th>
+                <th>Nama Barang</th>
+                <th>Status / Peringatan</th>
+              </tr>
+            </thead>
+            <tbody id="sn-list-table-body">
+                <!-- Rows di-generate via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Close Modal -->
+  <div id="confirm-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border: none; padding-bottom: 0;">
+        <h2>Konfirmasi Selesai</h2>
+      </div>
+      <div class="modal-body" style="padding-top: 15px;">
+        <p>Apakah Anda yakin data <strong id="confirm-kode" style="color: var(--primary);"></strong> ini sudah selesai diproses (Closed)?</p>
+        <p style="color: var(--danger); font-size: 13px; margin-top: 10px;">Data ini akan dipindahkan ke Arsip.</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; border: none;">
+        <button class="btn btn-outline" id="btn-cancel-confirm">Batal</button>
+        <button class="btn btn-success" id="btn-execute-close">Selesaikan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div id="delete-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border: none; padding-bottom: 0;">
+        <h2 style="color: var(--danger);">Hapus Data Selesai</h2>
+      </div>
+      <div class="modal-body" style="padding-top: 15px;">
+        <p>Apakah Anda yakin ingin menghapus data <strong id="delete-kode" style="color: var(--danger);"></strong> secara permanen?</p>
+        <p style="color: var(--text-muted); font-size: 13px; margin-top: 10px;">Tindakan ini tidak dapat dibatalkan.</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; border: none;">
+        <button class="btn btn-outline" id="btn-cancel-delete">Batal</button>
+        <button class="btn btn-danger" id="btn-execute-delete" style="background: var(--danger); color: white; border: none;">Hapus Permanen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Result Modal -->
+  <div id="import-result-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border: none; padding-bottom: 0; position: relative;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+          <i class="fas fa-check" style="font-size: 24px; color: white;"></i>
+        </div>
+        <button class="close-btn" id="close-import-result" style="position: absolute; right: 0; top: 0;"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="padding-top: 4px;">
+        <h2 style="font-size: 18px; margin-bottom: 6px; color: var(--text-main);">Import Berhasil!</h2>
+        <p id="import-result-kategori" style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;"></p>
+
+        <!-- Stats Cards -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+          <!-- Tambah -->
+          <div style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.05)); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 14px 8px;">
+            <div style="font-size: 26px; font-weight: 800; color: #10b981;" id="import-count-tambah">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600;">
+              <i class="fas fa-plus-circle" style="color: #10b981;"></i> Tambah
+            </div>
+          </div>
+          <!-- Update -->
+          <div style="background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(37,99,235,0.05)); border: 1.5px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 14px 8px;">
+            <div style="font-size: 26px; font-weight: 800; color: #3b82f6;" id="import-count-update">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600;">
+              <i class="fas fa-sync-alt" style="color: #3b82f6;"></i> Update
+            </div>
+          </div>
+          <!-- Arsip -->
+          <div style="background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(234,88,12,0.05)); border: 1.5px solid rgba(249,115,22,0.3); border-radius: 12px; padding: 14px 8px;">
+            <div style="font-size: 26px; font-weight: 800; color: #f97316;" id="import-count-arsip">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600;">
+              <i class="fas fa-archive" style="color: #f97316;"></i> Arsip
+            </div>
+          </div>
+        </div>
+
+        <p id="import-result-raw" style="font-size: 12px; color: var(--text-muted); background: var(--bg-secondary, #f8fafc); border-radius: 8px; padding: 8px 12px; font-family: monospace;"></p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; border: none; padding-top: 0;">
+        <button class="btn btn-success" id="btn-ok-import-result" style="min-width: 120px; border-radius: 10px;">
+          <i class="fas fa-check"></i> OK, Mengerti
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Part Modal -->
+  <div id="export-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>List Part Order (WhatsApp)</h2>
+        <button class="close-btn" id="close-export"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="margin-bottom: 10px; font-size: 13px;">Berikut adalah daftar part yang akan diorder dari semua data yang belum selesai di menu ini.</p>
+        <textarea id="export-textarea" class="form-control" style="height: 200px; resize: none;" readonly></textarea>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+          <input type="checkbox" id="toggle-numbering" checked style="accent-color: var(--primary); cursor: pointer; width: 16px; height: 16px;"> Pakai Nomor (1, 2, 3)
+        </label>
+        <div style="display: flex; gap: 10px;">
+          <button class="btn btn-outline" id="btn-cancel-export">Tutup</button>
+          <button class="btn btn-success" id="btn-copy-export"><i class="fas fa-copy"></i> Salin Teks</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WA Modal -->
+  <div id="wa-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>Pesan WhatsApp (Siap Diambil)</h2>
+        <button class="close-btn" id="close-wa"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="margin-bottom: 10px; font-size: 13px;">Silakan sesuaikan isi pesan (seperti Biaya / Note) sebelum disalin.</p>
+        <textarea id="wa-textarea" class="form-control" style="height: 300px; resize: vertical;"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-wa">Tutup</button>
+        <button class="btn btn-success" id="btn-copy-wa" style="background: #25D366; border-color: #25D366;"><i class="fas fa-copy"></i> Salin Teks</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="modal-header">
+        <h2><i class="fas fa-cog" style="color: var(--primary);"></i> Pengaturan Sistem</h2>
+        <button class="close-btn" id="close-settings"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body settings-grid-container">
+        
+        <!-- KOLOM KIRI: Highlight Warna -->
+        <div class="settings-column">
+          <h3 style="margin-bottom: 10px; font-size: 16px; color: var(--text-main);"><i class="fas fa-palette"></i> Highlight Warna</h3>
+          <p class="text-muted" style="margin-bottom: 15px; font-size: 13px;">Tentukan kata kunci dan warna untuk menandai otomatis status di tabel. (Misal: "closed" -> Merah)</p>
+          <div class="table-scroll-container" style="max-height: 250px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+              <thead style="background: var(--bg-body); position: sticky; top: 0; z-index: 10;">
+                <tr>
+                  <th style="padding: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Kata Kunci</th>
+                  <th style="padding: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); width: 80px; text-align: center;">Warna</th>
+                  <th style="padding: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); width: 60px; text-align: center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="settings-table-body">
+                <!-- Rows inserted via JS -->
+              </tbody>
+            </table>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="addSettingsRow()" style="width: 100%; justify-content: center;"><i class="fas fa-plus"></i> Tambah Aturan Warna</button>
+        </div>
+        
+        <!-- KOLOM KANAN: Manajemen User -->
+        <div class="settings-column" style="border-left: 1px solid var(--border-color); padding-left: 25px;">
+          <h3 style="margin-bottom: 10px; font-size: 16px; color: var(--text-main);"><i class="fas fa-users"></i> Manajemen User Aplikasi</h3>
+          <p class="text-muted" style="margin-bottom: 15px; font-size: 13px;">Kelola akun admin yang bisa masuk ke dalam dashboard ini.</p>
+          <div class="table-scroll-container" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 8px;">
+            <table style="width: 100%; text-align: left; border-collapse: collapse;">
+              <thead style="background: var(--bg-body); position: sticky; top: 0; z-index: 10;">
+                <tr>
+                  <th style="padding: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Username</th>
+                  <th style="padding: 10px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color); width: 100px; text-align: center;">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="user-management-table-body">
+                <tr><td colspan="2" style="text-align: center; padding: 10px;"><i class="fas fa-spinner fa-spin"></i> Memuat data user...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          
+          <!-- Form Tambah User -->
+          <div style="background: var(--bg-body); padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color);">
+            <h4 style="font-size: 13px; margin-bottom: 10px;">Tambah User Baru</h4>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+              <input type="text" id="new-username" class="form-control" placeholder="Username" style="flex: 1;">
+              <input type="password" id="new-password" class="form-control" placeholder="Password" style="flex: 1;">
+            </div>
+            <button class="btn btn-primary btn-sm" id="btn-add-user" style="width: 100%; justify-content: center;"><i class="fas fa-user-plus"></i> Tambah User</button>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-settings">Tutup</button>
+        <button class="btn btn-primary" id="btn-save-settings"><i class="fas fa-save"></i> Simpan Pengaturan (Warna)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout Modal -->
+  <div id="logout-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="border-bottom: none; padding-bottom: 0;">
+        <h2 style="width: 100%;"><i class="fas fa-sign-out-alt" style="font-size: 30px; color: var(--danger); margin-bottom: 10px;"></i><br>Konfirmasi Keluar</h2>
+      </div>
+      <div class="modal-body" style="padding-top: 10px;">
+        <p class="text-muted" style="margin-bottom: 20px;">Apakah Anda yakin ingin keluar dari aplikasi?</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; border-top: none;">
+        <button class="btn btn-outline" id="btn-cancel-logout">Batal</button>
+        <button class="btn btn-danger" id="btn-confirm-logout" style="background: var(--danger); color: white; border: none;">Ya, Keluar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alokasi Modal -->
+  <div id="alokasi-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2>Alokasi Part</h2>
+        <button class="close-btn" id="close-alokasi"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="margin-bottom: 15px; font-size: 13px;">Masukkan SN (No Seri/Produksi) untuk dialokasikan pada Tanda Terima: <strong id="alokasi-kode" style="color: var(--text-main);"></strong></p>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">SN (No Seri / Produksi)</label>
+          <input type="text" id="alokasi-sn" class="form-control" placeholder="Ketik / Scan SN...">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Nama Barang (Otomatis)</label>
+          <input type="text" id="alokasi-nama-barang" class="form-control" placeholder="Nama barang akan muncul otomatis" readonly style="background-color: #f1f5f9;">
+        </div>
+        <div id="alokasi-warning" class="hidden" style="color: var(--danger); background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 15px;">
+          <i class="fas fa-exclamation-triangle"></i> Data part ini belum dimasukan, silahkan import data Stock Nomor Seri/Produksi Per Barang dari Accurate.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-alokasi">Batal</button>
+        <button class="btn btn-primary" id="btn-save-alokasi" disabled>Simpan Alokasi</button>
+      </div>
+    </div>
+  </div>
+  </div> <!-- End App Content -->
+
+  <div id="alokasi-cabang-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="modal-header">
+        <h2>Alokasi Cabang (Massal)</h2>
+        <button class="close-btn" id="close-alokasi-cabang"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Pilih Cabang Tujuan</label>
+          <select id="alokasi-cabang-select" class="form-control">
+            <option value="">-- Pilih Cabang --</option>
+            <!-- Opsi Cabang akan dirender dari JS -->
+            <option value="TAMBAH_BARU" style="font-weight:bold; color:var(--primary);">+ Tambah Cabang Baru...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Keterangan (Nomor IO)</label>
+          <input type="text" id="alokasi-cabang-io" class="form-control" placeholder="Contoh: IO 12345">
+        </div>
+        <div class="form-group">
+          <label>Masukkan Serial Number (SN) Part</label>
+          <textarea id="alokasi-cabang-sn" class="form-control" rows="4" placeholder="Ketik atau paste banyak SN di sini... (pisahkan dengan koma atau enter)"></textarea>
+          <small style="color: var(--text-muted);">Sistem akan mendeteksi otomatis saat Anda mengetik enter atau koma.</small>
+        </div>
+        
+        <div id="alokasi-cabang-preview" class="table-scroll-container" style="max-height: 250px; display: none; margin-top: 15px; border-top: 1px solid var(--border-color);">
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border-color); text-align: left;">
+                <th style="padding: 8px;">SN</th>
+                <th style="padding: 8px;">Nama Barang</th>
+                <th style="padding: 8px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="alokasi-cabang-preview-body">
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-alokasi-cabang">Batal</button>
+        <button class="btn btn-primary" id="btn-save-alokasi-cabang" disabled><i class="fas fa-save"></i> Simpan Alokasi</button>
+      </div>
+    </div>
+  </div>
+
+  <?!= include('JavaScript'); ?>
+</body>
+</html>
