@@ -678,3 +678,48 @@ function getAllAlokasi() {
     return { success: false, error: e.toString() };
   }
 }
+
+function clearArsipData() {
+  try {
+    const sheet = getDbSheet();
+    const data = sheet.getDataRange().getValues();
+    
+    if (data.length <= 1) return { success: true, message: "Tidak ada data untuk dihapus." };
+    
+    const headers = data[0];
+    const isClosedIndex = headers.indexOf("Is_Closed");
+    
+    if (isClosedIndex === -1) {
+       return { success: false, error: "Kolom Is_Closed tidak ditemukan." };
+    }
+    
+    // Filter data: simpan header dan baris yang BUKAN arsip
+    const remainingData = data.filter((row, index) => {
+      if (index === 0) return true; // keep header
+      const isClosedVal = row[isClosedIndex];
+      return !(isClosedVal === true || isClosedVal === 'true' || isClosedVal === 'TRUE');
+    });
+    
+    if (remainingData.length === data.length) {
+      return { success: true, message: "Tidak ada data arsip yang dihapus." };
+    }
+    
+    // Kosongkan dan tulis ulang data yang tersisa
+    sheet.clearContents();
+    if (remainingData.length > 0) {
+      sheet.getRange(1, 1, remainingData.length, remainingData[0].length).setValues(remainingData);
+    }
+    
+    // Hapus baris kosong berlebih di bawah untuk mengurangi ukuran sheet
+    const totalRows = sheet.getMaxRows();
+    if (totalRows > remainingData.length) {
+      sheet.deleteRows(remainingData.length + 1, totalRows - remainingData.length);
+    }
+    
+    const countDeleted = data.length - remainingData.length;
+    return { success: true, message: `Berhasil menghapus ${countDeleted} data arsip selesai.` };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+

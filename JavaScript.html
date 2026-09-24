@@ -8,6 +8,20 @@ let appCabangData = [];
 let currentView = 'dashboard';
 let itemToClose = null;
 let itemToAlokasi = null;
+let customSortCol = '';
+let customSortDir = 1;
+
+function toggleSort(column) {
+  if (customSortCol === column) {
+    if (customSortDir === 1) customSortDir = -1;
+    else { customSortCol = ''; customSortDir = 1; }
+  } else {
+    customSortCol = column;
+    customSortDir = 1;
+  }
+  const searchInput = document.getElementById('search-input');
+  renderTable(currentView, searchInput ? searchInput.value : "");
+}
 
 // Helper: cek Is_Closed (handle boolean & string)
 function isClosed(d) {
@@ -25,7 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
   setupAuth();
   setupAlokasi();
   setupAlokasiCabang();
+  setupAlokasiUser();
   setupNotifications();
+  setupClearArsip();
+  setupPrintSiapDiambil();
   
   // Initialize Clock
   setInterval(updateClock, 1000);
@@ -203,13 +220,18 @@ function updateAvatar() {
 // ==================== NAVIGATION ====================
 function setupNavigation() {
   const hamburgerBtn = document.getElementById('hamburger-btn');
-  const navMenu = document.getElementById('nav-menu');
-  const topbarRight = document.getElementById('topbar-right');
+  const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+  const sidebar = document.getElementById('sidebar');
   
   if (hamburgerBtn) {
     hamburgerBtn.addEventListener('click', () => {
-      navMenu.classList.toggle('show');
-      if(topbarRight) topbarRight.classList.toggle('show');
+      if(sidebar) sidebar.classList.toggle('show');
+    });
+  }
+  
+  if (closeSidebarBtn) {
+    closeSidebarBtn.addEventListener('click', () => {
+      if(sidebar) sidebar.classList.remove('show');
     });
   }
 
@@ -217,8 +239,7 @@ function setupNavigation() {
   navItems.forEach(item => {
     item.addEventListener('click', () => {
       // Sembunyikan menu lagi kalau di hp setelah klik
-      navMenu.classList.remove('show');
-      if(topbarRight) topbarRight.classList.remove('show');
+      if(sidebar) sidebar.classList.remove('show');
 
       navItems.forEach(n => n.classList.remove('active'));
       document.querySelectorAll('.view-section').forEach(s => s.classList.add('hidden'));
@@ -332,11 +353,68 @@ function loadData(showSpinner = true) {
 function updateDashboardStats() {
   const konf = appData.filter(d => !isClosed(d) && d.Kategori_File === 'konfirmasi').length;
   const orderData = appData.filter(d => !isClosed(d) && d.Kategori_File === 'order_part');
-  const siap = appData.filter(d => !isClosed(d) && d.Kategori_File === 'siap_diambil').length;
+  
+  const siapData = appData.filter(d => !isClosed(d) && d.Kategori_File === 'siap_diambil');
+  const siap = siapData.length;
   
   document.getElementById('count-konfirmasi').textContent = konf;
   document.getElementById('count-order').textContent = orderData.length;
   document.getElementById('count-siap').textContent = siap;
+  
+  // Hitung detail Siap Diambil
+  let cancelCount = 0;
+  let sudahKonfCount = 0;
+  let belumKonfCount = 0;
+  let h1Count = 0;
+  let h2Count = 0;
+  let h3Count = 0;
+  
+  let todayDate = new Date();
+  todayDate.setHours(0,0,0,0);
+  
+  siapData.forEach(d => {
+    // Cancel vs Murni
+    if (d.Status && String(d.Status).toLowerCase().includes('cancel')) {
+      cancelCount++;
+    }
+    
+    // Sudah vs Belum Konfirmasi
+    if (d.Tgl_Konfirmasi_User) {
+      sudahKonfCount++;
+      
+      // Hitung H+ (Selisih Hari)
+      let parts = d.Tgl_Konfirmasi_User.split(' ')[0].split('-');
+      if (parts.length === 3) {
+        let kDate = new Date(parts[2], parts[1] - 1, parts[0]);
+        let diffDays = Math.floor((todayDate - kDate) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays === 1) h1Count++;
+        else if (diffDays === 2) h2Count++;
+        else if (diffDays >= 3) h3Count++;
+      }
+    } else {
+      belumKonfCount++;
+    }
+  });
+  
+  const murniSiap = siap - cancelCount;
+  
+  // Update DOM Detail Stats
+  const elMurni = document.getElementById('dash-siap-murni');
+  const elCancel = document.getElementById('dash-siap-cancel');
+  const elSudah = document.getElementById('dash-siap-sudah-konf');
+  const elBelum = document.getElementById('dash-siap-belum-konf');
+  const elH1 = document.getElementById('dash-siap-h1');
+  const elH2 = document.getElementById('dash-siap-h2');
+  const elH3 = document.getElementById('dash-siap-h3');
+  
+  if (elMurni) elMurni.textContent = murniSiap;
+  if (elCancel) elCancel.textContent = cancelCount;
+  if (elSudah) elSudah.textContent = sudahKonfCount;
+  if (elBelum) elBelum.textContent = belumKonfCount;
+  if (elH1) elH1.textContent = h1Count;
+  if (elH2) elH2.textContent = h2Count;
+  if (elH3) elH3.textContent = h3Count;
 
   // Render Kebutuhan Part List
   let partsToOrder = {};
@@ -380,7 +458,10 @@ function updateDashboardStats() {
       
     let partHtml = `
       <div class="part-list-item">
-        <div class="part-name-text">${codesHtml} ${part}</div>
+        <div class="part-name-text">
+          <div class="tt-container">${codesHtml}</div>
+          <div class="part-desc">${part}</div>
+        </div>
         ${badgeHtml}
       </div>
     `;
@@ -475,14 +556,17 @@ function renderTable(kategori, searchTerm = "") {
   
   const uploadBtn = document.getElementById('btn-upload-modal');
   const arsipFilters = document.getElementById('arsip-filters');
+  const btnClearArsip = document.getElementById('btn-clear-arsip');
 
   if (kategori === 'arsip') {
     title = "Arsip Data Selesai";
     uploadBtn.classList.add('hidden');
     arsipFilters.classList.remove('hidden');
+    if (btnClearArsip) btnClearArsip.classList.remove('hidden');
   } else {
     uploadBtn.classList.remove('hidden');
     arsipFilters.classList.add('hidden');
+    if (btnClearArsip) btnClearArsip.classList.add('hidden');
     if (kategori === 'order-part') {
       title = "Data Order Part & Alokasi";
       filterKategori = 'order_part';
@@ -500,8 +584,12 @@ function renderTable(kategori, searchTerm = "") {
 
   if (kategori === 'siap-diambil') {
      document.getElementById('konfirmasi-filters').classList.remove('hidden');
+     const printBtn = document.getElementById('btn-print-siap');
+     if (printBtn) printBtn.classList.remove('hidden');
   } else {
      document.getElementById('konfirmasi-filters').classList.add('hidden');
+     const printBtn = document.getElementById('btn-print-siap');
+     if (printBtn) printBtn.classList.add('hidden');
   }
 
   if (kategori === 'so') {
@@ -535,10 +623,27 @@ function renderTable(kategori, searchTerm = "") {
   // Filter Konfirmasi
   if (kategori === 'siap-diambil') {
     const fKonf = document.getElementById('filter-konfirmasi').value;
-    if (fKonf === 'Sudah') {
-      filteredData = filteredData.filter(d => !!d.Tgl_Konfirmasi_User);
-    } else if (fKonf === 'Belum') {
-      filteredData = filteredData.filter(d => !d.Tgl_Konfirmasi_User);
+    if (fKonf) {
+      let todayDate = new Date();
+      todayDate.setHours(0,0,0,0);
+      
+      filteredData = filteredData.filter(d => {
+        if (fKonf === 'Sudah') return !!d.Tgl_Konfirmasi_User;
+        if (fKonf === 'Belum') return !d.Tgl_Konfirmasi_User;
+        
+        if (d.Tgl_Konfirmasi_User && (fKonf === 'H1' || fKonf === 'H2' || fKonf === 'H3')) {
+          let parts = d.Tgl_Konfirmasi_User.split(' ')[0].split('-');
+          if (parts.length === 3) {
+            let kDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            let diffDays = Math.floor((todayDate - kDate) / (1000 * 60 * 60 * 24));
+            
+            if (fKonf === 'H1' && diffDays === 1) return true;
+            if (fKonf === 'H2' && diffDays === 2) return true;
+            if (fKonf === 'H3' && diffDays >= 3) return true;
+          }
+        }
+        return false;
+      });
     }
   }
 
@@ -552,18 +657,26 @@ function renderTable(kategori, searchTerm = "") {
     }
   }
   
-  // Filter Spesifik Arsip (Bulan, Tahun, Kategori)
+  // Filter Spesifik Arsip (Periode, Kategori)
   if (kategori === 'arsip') {
     const fKat = document.getElementById('filter-kategori-arsip').value;
-    const fBulan = document.getElementById('filter-bulan').value;
-    const fTahun = document.getElementById('filter-tahun').value;
+    const fPeriode = document.getElementById('filter-periode').value;
     
     // Terapkan filter Kategori Asal
     if (fKat) {
        filteredData = filteredData.filter(d => d.Kategori_File === fKat);
     }
     
-    if (fBulan || fTahun) {
+    if (fPeriode) {
+      const now = new Date();
+      const currentYear = now.getFullYear().toString();
+      const currentMonth = (now.getMonth() + 1).toString().padStart(2, '0');
+      
+      const lastMonthDate = new Date();
+      lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+      const lastMonthYear = lastMonthDate.getFullYear().toString();
+      const lastMonth = (lastMonthDate.getMonth() + 1).toString().padStart(2, '0');
+      
       filteredData = filteredData.filter(d => {
         if (!d.Kode) return true; // jika ga ada kode, anggap tampil
         
@@ -572,12 +685,17 @@ function renderTable(kategori, searchTerm = "") {
         const matchKode = d.Kode.match(/^.*?-(\d{4})(\d{2})\d{2}-/);
         
         if (matchKode) {
-           let match = true;
-           if (fTahun && matchKode[1] !== fTahun) match = false;
-           if (fBulan && matchKode[2] !== fBulan) match = false;
-           return match;
+           const dYear = matchKode[1];
+           const dMonth = matchKode[2];
+           
+           if (fPeriode === 'bulan_ini') {
+             return dYear === currentYear && dMonth === currentMonth;
+           } else if (fPeriode === 'bulan_lalu') {
+             return dYear === lastMonthYear && dMonth === lastMonth;
+           } else if (fPeriode === 'tahun_ini') {
+             return dYear === currentYear;
+           }
         }
-        
         return true;
       });
     }
@@ -607,24 +725,31 @@ function renderTable(kategori, searchTerm = "") {
     filteredData.reverse();
   }
 
+  // Custom Column Sorting
+  if (customSortCol === 'kebutuhan') {
+    filteredData.sort((a, b) => {
+      let valA = (a.Kebutuhan_Part || "").toLowerCase();
+      let valB = (b.Kebutuhan_Part || "").toLowerCase();
+      return valA.localeCompare(valB) * customSortDir;
+    });
+  } else if (customSortCol === 'status_order') {
+    filteredData.sort((a, b) => {
+      let valA = (a.Status_Part || "").toLowerCase();
+      let valB = (b.Status_Part || "").toLowerCase();
+      return valA.localeCompare(valB) * customSortDir;
+    });
+  } else if (customSortCol === 'status_konfirmasi') {
+    filteredData.sort((a, b) => {
+      let valA = (a.Status_Konfirmasi || "").toLowerCase();
+      let valB = (b.Status_Konfirmasi || "").toLowerCase();
+      return valA.localeCompare(valB) * customSortDir;
+    });
+  }
+
   // Update counter
   document.getElementById('table-count').textContent = filteredData.length;
   
-  if (kategori === 'siap-diambil') {
-     document.getElementById('siap-diambil-stats').classList.remove('hidden');
-     let countCancel = filteredData.filter(d => d.Status && String(d.Status).toLowerCase().includes('cancel')).length;
-     let countSiap = filteredData.length - countCancel;
-     
-     let countSiapEl = document.getElementById('count-siap-table');
-     if (!countSiapEl) countSiapEl = document.getElementById('count-siap'); // Fallback jika user pakai id lama
-     
-     if (countSiapEl) countSiapEl.textContent = countSiap;
-     
-     let countCancelEl = document.getElementById('count-cancel');
-     if (countCancelEl) countCancelEl.textContent = countCancel;
-  } else {
-     document.getElementById('siap-diambil-stats').classList.add('hidden');
-  }
+  // Blok siap-diambil-stats dihapus karena pindah ke dashboard
 
   const thead = document.getElementById('table-head');
   const tbody = document.getElementById('table-body');
@@ -646,9 +771,29 @@ function renderTable(kategori, searchTerm = "") {
   }
   
   if (kategori === 'order-part') {
-    headersHTML += `<th style="width: auto;">Kebutuhan Part</th><th style="width: 220px;">Status Order Part</th><th style="width: 110px; text-align: center;">Aksi Admin</th>`;
+    let kebIcon = customSortCol === 'kebutuhan' ? (customSortDir === 1 ? '▲' : '▼') : '<span style="color:#ccc; font-size:10px;">▼</span>';
+    let statIcon = customSortCol === 'status_order' ? (customSortDir === 1 ? '▲' : '▼') : '<span style="color:#ccc; font-size:10px;">▼</span>';
+    
+    headersHTML += `
+      <th style="width: auto;">
+        Kebutuhan Part 
+        <span class="sort-triangle" onclick="toggleSort('kebutuhan')">${kebIcon}</span>
+      </th>
+      <th style="width: 220px;">
+        Status Order Part 
+        <span class="sort-triangle" onclick="toggleSort('status_order')">${statIcon}</span>
+      </th>
+      <th style="width: 110px; text-align: center;">Aksi Admin</th>
+    `;
   } else if (kategori === 'konfirmasi') {
-    headersHTML += `<th>Status Konfirmasi</th><th style="width: 140px; text-align: center;">Aksi Admin</th>`;
+    let statKonfIcon = customSortCol === 'status_konfirmasi' ? (customSortDir === 1 ? '▲' : '▼') : '<span style="color:#ccc; font-size:10px;">▼</span>';
+    headersHTML += `
+      <th style="width: 40%;">
+        Status Konfirmasi
+        <span class="sort-triangle" onclick="toggleSort('status_konfirmasi')">${statKonfIcon}</span>
+      </th>
+      <th style="width: 140px; text-align: center;">Aksi Admin</th>
+    `;
   } else if (kategori === 'siap-diambil') {
     headersHTML += `<th style="width: 150px; text-align: center;">Status Konfirmasi</th><th style="width: 110px; text-align: center;">Aksi Admin</th>`;
   } else if (kategori === 'arsip') {
@@ -769,10 +914,12 @@ function renderTable(kategori, searchTerm = "") {
       if (kategori !== 'so') {
         if (kategori === 'order-part') {
           customerInfo = `<td style="max-width: 140px; white-space: normal; word-wrap: break-word;">${d.Pelanggan || '-'}</td>
-               <td style="max-width: 150px; white-space: normal; word-wrap: break-word;">${d.Unit || '-'}<br><small class="text-muted">${d.SN || '-'}</small></td>`;
+               <td style="max-width: 150px; white-space: normal; word-wrap: break-word; font-size: 13px;">${d.Unit || '-'}<br><small class="text-muted" style="font-size: 11px;">${d.SN || '-'}</small></td>`;
         } else {
+          let unitStyle = kategori === 'konfirmasi' ? 'font-size: 13px;' : '';
+          let snStyle = kategori === 'konfirmasi' ? 'font-size: 11px;' : '';
           customerInfo = `<td>${d.Pelanggan || '-'}</td>
-               <td>${d.Unit || '-'}<br><small class="text-muted">${d.SN || '-'}</small></td>`;
+               <td style="${unitStyle}">${d.Unit || '-'}<br><small class="text-muted" style="${snStyle}">${d.SN || '-'}</small></td>`;
         }
       }
 
@@ -795,8 +942,8 @@ function renderTable(kategori, searchTerm = "") {
       rowsHTML += `
         <tr style="${rowStyle}">
           <td style="${kodeStyle}">
-            ${kodeDisplay}<br>
-            <small class="text-muted" style="white-space: normal;">${d.Status || '-'}</small>${garansiDisplay}
+            ${kodeDisplay}
+            ${(kategori === 'konfirmasi' || kategori === 'order-part') ? '' : `<br><small class="text-muted" style="white-space: normal;">${d.Status || '-'}</small>`}${garansiDisplay}
           </td>
           ${customerInfo}
           ${extraCol}
@@ -1037,8 +1184,7 @@ function setupSearch() {
     if (currentView === 'arsip') renderTable(currentView, searchInput.value);
   };
   
-  document.getElementById('filter-bulan').addEventListener('change', reloadArsip);
-  document.getElementById('filter-tahun').addEventListener('change', reloadArsip);
+  document.getElementById('filter-periode').addEventListener('change', reloadArsip);
   document.getElementById('filter-kategori-arsip').addEventListener('change', reloadArsip);
   
   document.getElementById('filter-garansi').addEventListener('change', () => {
@@ -2155,6 +2301,314 @@ function setupAlokasiCabang() {
         alert("Error saat menghubungi server: " + err);
       })
       .saveAlokasiBatch(itemsToSave);
+  });
+}
+
+function setupClearArsip() {
+  const btn = document.getElementById('btn-clear-arsip');
+  if (btn) {
+    btn.addEventListener('click', () => {
+      const confirmed = confirm("⚠️ PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA data arsip? Aksi ini akan menghapus data permanen dari Spreadsheet dan tidak dapat dibatalkan.");
+      if (confirmed) {
+        showLoading(true);
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res.success) {
+              alert(res.message);
+              loadData(); // reload data dari server
+            } else {
+              showLoading(false);
+              alert("Gagal menghapus arsip: " + res.error);
+            }
+          })
+          .withFailureHandler(err => {
+            showLoading(false);
+            alert("Error saat menghubungi server: " + err);
+          })
+          .clearArsipData();
+      }
+    });
+  }
+}
+
+function setupPrintSiapDiambil() {
+  const btnPrint = document.getElementById('btn-print-siap');
+  const modal = document.getElementById('print-modal');
+  const btnCancel = document.getElementById('btn-cancel-print');
+  const btnClose = document.getElementById('close-print-modal');
+  const btnConfirm = document.getElementById('btn-confirm-print');
+  const dateInput = document.getElementById('print-date-input');
+
+  if (!btnPrint || !modal) return;
+
+  const closeModal = () => modal.classList.add('hidden');
+
+  btnCancel.addEventListener('click', closeModal);
+  btnClose.addEventListener('click', closeModal);
+
+  btnPrint.addEventListener('click', () => {
+    // Default to H+1 (besok)
+    let tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    let yyyy = tomorrow.getFullYear();
+    let mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
+    let dd = String(tomorrow.getDate()).padStart(2, '0');
+    
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+    modal.classList.remove('hidden');
+  });
+
+  btnConfirm.addEventListener('click', () => {
+    closeModal();
+    
+    const printDateRaw = new Date(dateInput.value);
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateFormatted = printDateRaw.toLocaleDateString('id-ID', options).toUpperCase();
+    
+    const fontInput = document.getElementById('print-font-input');
+    const fontSize = fontInput ? fontInput.value : '12';
+    
+    const paddingInput = document.getElementById('print-padding-input');
+    const cellPadding = paddingInput ? paddingInput.value : '10';
+    
+    // Kumpulkan data dari tabel yang sedang aktif
+    const tbody = document.getElementById('table-body');
+    const rows = tbody.querySelectorAll('tr');
+    
+    let tandaTerimaList = [];
+    
+    rows.forEach(row => {
+      // Pastikan bukan row empty state
+      if (row.cells.length < 2) return;
+      
+      // Ambil Tanda Terima dari cell pertama (elemen div pertama yang berisi kode)
+      let tandaTerima = '';
+      const divKode = row.cells[0].querySelector('div');
+      if (divKode) {
+         tandaTerima = divKode.innerText.trim();
+      } else {
+         tandaTerima = row.cells[0].innerText.trim().split('\n')[0]; // fallback
+      }
+      if (tandaTerima && tandaTerima !== '-') {
+         tandaTerimaList.push(tandaTerima);
+      }
+    });
+    
+    // Jika tidak ada data
+    if (tandaTerimaList.length === 0) {
+      alert("Tidak ada data untuk dicetak!");
+      return;
+    }
+    
+    // Urutkan A-Z
+    tandaTerimaList.sort((a, b) => a.localeCompare(b));
+    
+    let tableRowsHTML = '';
+    
+    // Hitung jumlah baris berdasarkan 3 kolom (urut atas ke bawah)
+    const numRows = Math.ceil(tandaTerimaList.length / 3);
+    
+    for (let i = 0; i < numRows; i++) {
+       let col1 = tandaTerimaList[i] || '';
+       let col2 = tandaTerimaList[i + numRows] || '';
+       let col3 = tandaTerimaList[i + (2 * numRows)] || '';
+       
+       tableRowsHTML += `
+         <tr>
+           <td>${col1}</td>
+           <td>${col2}</td>
+           <td>${col3}</td>
+         </tr>
+       `;
+    }
+    
+    const htmlContent = `
+      <html>
+        <head>
+          <title>Daftar Siap Diambil</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 40px;
+              color: #000;
+            }
+            .header-title {
+              text-align: center;
+              font-weight: bold;
+              font-size: 16px;
+              margin-bottom: 5px;
+            }
+            .header-date {
+              text-align: center;
+              font-size: 14px;
+              font-weight: bold;
+              margin-bottom: 30px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #000;
+              padding: ${cellPadding}px;
+            }
+            th {
+              background-color: #ffffff; /* Putih sesuai screenshot baru */
+              font-weight: bold;
+              text-align: center;
+              font-size: 12px;
+            }
+            td {
+              height: 25px;
+              font-size: ${fontSize}px;
+              font-weight: 600;
+              color: #333;
+            }
+            td:nth-child(1), td:nth-child(2), td:nth-child(3) { width: 33.33%; text-align: left; }
+            
+            @media print {
+              body { margin: 0; padding: 20px; }
+              @page { size: A4 portrait; margin: 15mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header-title">DAFTAR UNIT SIAP DIAMBIL / CANCEL</div>
+          <div class="header-date">${dateFormatted}</div>
+          
+          <table>
+            <thead>
+              <tr>
+                <th colspan="3">TANDA TERIMA</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHTML}
+            </tbody>
+          </table>
+          <scr` + `ipt>
+             window.onload = function() {
+               window.print();
+               setTimeout(function() { window.close(); }, 500);
+             };
+          </scr` + `ipt>
+        </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  });
+}
+
+function setupAlokasiUser() {
+  const alokasiUserModal = document.getElementById('alokasi-user-modal');
+  if(!alokasiUserModal) return;
+
+  const closeUserAlokasi = () => { 
+    alokasiUserModal.classList.add('hidden'); 
+    document.getElementById('alokasi-user-tanda-terima').value = '';
+    document.getElementById('alokasi-user-sn').value = '';
+    document.getElementById('alokasi-user-nama-barang').value = '';
+    document.getElementById('alokasi-user-tanggal').value = '';
+    document.getElementById('alokasi-user-keterangan').value = '';
+    document.getElementById('alokasi-user-warning').classList.add('hidden');
+    document.getElementById('btn-save-alokasi-user').disabled = false;
+  };
+
+  document.getElementById('btn-alokasi-user').addEventListener('click', () => {
+    alokasiUserModal.classList.remove('hidden');
+    
+    // Set default date to today
+    const today = new Date();
+    const tzOffset = today.getTimezoneOffset() * 60000; // offset in milliseconds
+    const localISOTime = (new Date(today - tzOffset)).toISOString().split('T')[0];
+    document.getElementById('alokasi-user-tanggal').value = localISOTime;
+  });
+
+  document.getElementById('close-alokasi-user').addEventListener('click', closeUserAlokasi);
+  document.getElementById('btn-cancel-alokasi-user').addEventListener('click', closeUserAlokasi);
+
+  const snInput = document.getElementById('alokasi-user-sn');
+  const namaInput = document.getElementById('alokasi-user-nama-barang');
+  const warningMsg = document.getElementById('alokasi-user-warning');
+  const btnSave = document.getElementById('btn-save-alokasi-user');
+
+  snInput.addEventListener('keyup', (e) => {
+    const val = e.target.value.trim();
+    if (val === "") {
+      namaInput.value = "";
+      warningMsg.classList.add('hidden');
+      return;
+    }
+    
+    // Cari SN di appStockData
+    const found = appStockData.find(s => s.SN === val);
+    if (found) {
+      namaInput.value = found.Nama_Barang;
+      warningMsg.classList.add('hidden');
+    } else {
+      namaInput.value = "";
+      warningMsg.classList.remove('hidden');
+    }
+  });
+
+  btnSave.addEventListener('click', () => {
+    const tandaTerima = document.getElementById('alokasi-user-tanda-terima').value.trim();
+    const sn = snInput.value.trim();
+    const nama = namaInput.value.trim();
+    const tanggal = document.getElementById('alokasi-user-tanggal').value;
+    const keterangan = document.getElementById('alokasi-user-keterangan').value.trim();
+
+    if (!tandaTerima || !sn || !nama) {
+       alert("Harap lengkapi Nomor Tanda Terima, SN, dan pastikan Nama Barang terdeteksi.");
+       return;
+    }
+
+    let dStr = "";
+    if (tanggal) {
+       const d = new Date(tanggal);
+       dStr = d.getDate().toString().padStart(2, '0') + '-' + 
+              (d.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+              d.getFullYear();
+    } else {
+       const today = new Date();
+       dStr = today.getDate().toString().padStart(2, '0') + '-' + 
+              (today.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+              today.getFullYear();
+    }
+               
+    showLoading(true);
+    closeUserAlokasi();
+    
+    if (typeof google === 'undefined') {
+       appAlokasiData.push({ Tanda_Terima: tandaTerima, SN: sn, Nama_Barang: nama, Tanggal_Alokasi: dStr, Keterangan: keterangan });
+       showLoading(false);
+       renderAlokasiTable();
+       return;
+    }
+    
+    google.script.run
+      .withFailureHandler(err => {
+         showLoading(false);
+         alert("Terjadi kesalahan jaringan atau script belum disimpan di Code.gs: " + err);
+      })
+      .withSuccessHandler(res => {
+         if (res.success) {
+            appAlokasiData.push({ Tanda_Terima: tandaTerima, SN: sn, Nama_Barang: nama, Tanggal_Alokasi: dStr, Keterangan: keterangan });
+            showLoading(false);
+            renderAlokasiTable();
+            alert("Alokasi berhasil disimpan!");
+         } else {
+            showLoading(false);
+            alert("Gagal menyimpan alokasi: " + res.error);
+         }
+      })
+      .saveAlokasi(tandaTerima, sn, nama, dStr, keterangan);
   });
 }
 

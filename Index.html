@@ -39,52 +39,78 @@
 
   <!-- Main App -->
   <div id="app-content" class="hidden">
-    <!-- Top Navigation -->
-  <nav class="topbar">
-    <div class="topbar-mobile-header">
+    <!-- Mobile Header (Visible only on mobile) -->
+    <header class="mobile-header hidden-desktop">
       <div class="brand">
         <img src="data:image/png;base64,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" alt="Logo" style="height: 35px; border-radius: 6px; margin-right: 1px;">
-        ELS ADMIN-OOW
+        <div style="display: flex; flex-direction: column; line-height: 1.2; justify-content: center;">
+          <span style="font-size: 16px;">ELS ADMIN</span>
+          <span style="font-size: 11px; color: var(--primary);">Admin-OOW</span>
+        </div>
       </div>
       <button id="hamburger-btn" class="hamburger-btn">
         <i class="fas fa-bars"></i>
       </button>
-    </div>
-    
-    <ul class="nav-menu" id="nav-menu">
-      <li class="nav-item active" data-target="dashboard">Dashboard</li>
-      <li class="nav-item" data-target="konfirmasi">Konfirmasi</li>
-      <li class="nav-item" data-target="order-part">Order Part</li>
-      <li class="nav-item" data-target="alokasi-part">Alokasi Part</li>
-      <li class="nav-item" data-target="siap-diambil">Siap Diambil</li>
-      <li class="nav-item" data-target="so">Stock Opname (SO)</li>
-      <li class="nav-item" data-target="arsip">Arsip Selesai</li>
-    </ul>
+    </header>
 
-    <div class="topbar-right" id="topbar-right" style="position: relative;">
-      <div class="user-profile" id="user-profile-badge" style="cursor: pointer;">
-        <div style="position: relative; display: flex; align-items: center; justify-content: center;">
-          <div class="user-avatar" id="user-avatar-initial">A</div>
-          <div id="avatar-notification-badge" class="hidden" style="position: absolute; top: -4px; right: -4px; background: var(--danger); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid white; z-index: 2;">0</div>
-        </div>
-        <div class="user-name" id="user-avatar-name">Admin</div>
-      </div>
-      
-      <!-- Notification Dropdown -->
-      <div id="notif-dropdown" class="hidden" style="position: absolute; top: 120%; right: 100px; width: 320px; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border: 1px solid var(--border-color); z-index: 1000; overflow: hidden;">
-          <div style="padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 14px; background: #f8fafc;">Notifikasi Konfirmasi</div>
-          <div id="notif-list" style="padding: 15px; font-size: 13px; color: var(--text-dark); display: flex; align-items: center; gap: 12px; background: white; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'" onclick="document.querySelector('.nav-item[data-target=&quot;siap-diambil&quot;]').click(); document.getElementById('notif-dropdown').classList.add('hidden');">
-              <!-- Content injected by JS -->
+    <div class="app-layout">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <div class="brand">
+            <img src="data:image/png;base64,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" alt="Logo" style="height: 35px; border-radius: 6px; margin-right: 1px;">
+            <div style="display: flex; flex-direction: column; line-height: 1.2; justify-content: center;">
+              <span style="font-size: 16px;">ELS ADMIN</span>
+              <span style="font-size: 11px; color: var(--primary);">Admin-OOW</span>
+            </div>
           </div>
-      </div>
+          <button id="close-sidebar-btn" class="close-sidebar-btn hidden-desktop">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        
+        <ul class="nav-menu" id="nav-menu">
+          <li class="nav-item active" data-target="dashboard"><i class="fas fa-home nav-icon"></i> Dashboard</li>
+          <li class="nav-item" data-target="konfirmasi"><i class="fas fa-clock nav-icon"></i> Konfirmasi</li>
+          <li class="nav-item" data-target="order-part"><i class="fas fa-cogs nav-icon"></i> Order Part</li>
+          <li class="nav-item" data-target="alokasi-part"><i class="fas fa-boxes nav-icon"></i> Alokasi Part</li>
+          <li class="nav-item" data-target="siap-diambil"><i class="fas fa-check-circle nav-icon"></i> Siap Diambil</li>
+          <li class="nav-item" data-target="so"><i class="fas fa-warehouse nav-icon"></i> SO Unit</li>
+          <li class="nav-item" data-target="arsip"><i class="fas fa-archive nav-icon"></i> Arsip Selesai</li>
+        </ul>
 
-      <button class="btn btn-outline btn-sm" onclick="openSettingsModal()" style="border: none; padding: 6px; margin-right: 5px;"><i class="fas fa-cog"></i></button>
-      <button id="btn-logout" class="btn btn-outline btn-sm"><i class="fas fa-sign-out-alt"></i> Keluar</button>
-    </div>
-  </nav>
+        <div class="sidebar-footer" id="sidebar-right" style="position: relative; margin-top: auto;">
+          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <div class="user-profile" id="user-profile-badge" style="cursor: pointer; display: flex; align-items: center; gap: 10px; border: none; background: transparent; padding: 0; flex: 1; min-width: 0;">
+              <div style="position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <div class="user-avatar" id="user-avatar-initial" style="width: 32px; height: 32px;">A</div>
+                <div id="avatar-notification-badge" class="hidden" style="position: absolute; top: -4px; right: -4px; background: var(--danger); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid white; z-index: 2;">0</div>
+              </div>
+              <div class="user-name" id="user-avatar-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px;">Admin</div>
+            </div>
 
-  <!-- Main Content Area -->
-  <main class="main-content">
+            <div class="sidebar-actions" style="display: flex; align-items: center; gap: 4px;">
+              <button onclick="openSettingsModal()" title="Pengaturan" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='var(--text-main)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-muted)';">
+                <i class="fas fa-cog"></i>
+              </button>
+              <button id="btn-logout" title="Keluar" style="background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)';" onmouseout="this.style.background='transparent';">
+                <i class="fas fa-sign-out-alt"></i>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Notification Dropdown -->
+          <div id="notif-dropdown" class="hidden" style="position: absolute; bottom: 100%; left: 0; width: 100%; background: white; border-radius: 8px; box-shadow: 0 -5px 25px rgba(0,0,0,0.15); border: 1px solid var(--border-color); z-index: 1000; overflow: hidden; margin-bottom: 10px;">
+              <div style="padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 14px; background: #f8fafc;">Notifikasi Konfirmasi</div>
+              <div id="notif-list" style="padding: 15px; font-size: 13px; color: var(--text-dark); display: flex; align-items: center; gap: 12px; background: white; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'" onclick="document.querySelector('.nav-item[data-target=&quot;siap-diambil&quot;]').click(); document.getElementById('notif-dropdown').classList.add('hidden');">
+                  <!-- Content injected by JS -->
+              </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <main class="main-content">
     
     <div id="loading-overlay" class="loading-overlay hidden">
       <div class="spinner"></div>
@@ -127,17 +153,60 @@
           </div>
         </div>
       </div>
+      
+      <!-- Detail Statistik Siap Diambil -->
+      <div class="dashboard-detail-stats" style="margin-bottom: 40px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color);">
+        <h3 style="font-size: 15px; margin-bottom: 15px; color: var(--text-dark); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Detail Status: Siap Diambil</h3>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Murni Siap Diambil</div>
+            <div id="dash-siap-murni" style="font-size: 20px; font-weight: bold; color: var(--secondary);">0</div>
+          </div>
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #fef2f2; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Cancel</div>
+            <div id="dash-siap-cancel" style="font-size: 20px; font-weight: bold; color: var(--danger);">0</div>
+          </div>
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #f0fdf4; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Sudah Konfirmasi</div>
+            <div id="dash-siap-sudah-konf" style="font-size: 20px; font-weight: bold; color: #16a34a;">0</div>
+          </div>
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #fffbeb; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Belum Konfirmasi</div>
+            <div id="dash-siap-belum-konf" style="font-size: 20px; font-weight: bold; color: #d97706;">0</div>
+          </div>
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Konfirmasi H+1</div>
+            <div id="dash-siap-h1" style="font-size: 20px; font-weight: bold; color: #2563eb;">0</div>
+          </div>
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Konfirmasi H+2</div>
+            <div id="dash-siap-h2" style="font-size: 20px; font-weight: bold; color: #2563eb;">0</div>
+          </div>
+          
+          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Konfirmasi H+3 (atau >)</div>
+            <div id="dash-siap-h3" style="font-size: 20px; font-weight: bold; color: #2563eb;">0</div>
+          </div>
+
+        </div>
+      </div>
 
       <!-- Kebutuhan Part List -->
       <div class="dashboard-list-container">
         <div class="list-header">
-          <h2><i class="fas fa-clipboard-list" style="color: var(--primary);"></i> Daftar Part Yang Harus Diorder Hari Ini</h2>
+          <h2>Daftar Order Part</h2>
         </div>
         
         <div class="part-split-container">
           <!-- Kolom IW -->
           <div class="part-column">
-            <h3 class="part-column-title"><i class="fas fa-shield-alt" style="color: #10b981;"></i> Part Garansi (IW)</h3>
+            <h3 class="part-column-title">Part IW</h3>
             <div id="part-list-iw" class="part-list-grid">
                <!-- Rendered via JS -->
             </div>
@@ -145,7 +214,7 @@
           
           <!-- Kolom OOW -->
           <div class="part-column">
-            <h3 class="part-column-title"><i class="fas fa-tools" style="color: #f59e0b;"></i> Part Non-Garansi (OOW)</h3>
+            <h3 class="part-column-title">Part OOW</h3>
             <div id="part-list-oow" class="part-list-grid">
                <!-- Rendered via JS -->
             </div>
@@ -162,63 +231,48 @@
           <h2>
             <span id="table-title">Data Tabel</span> 
             <span class="badge-count" id="table-count">0</span>
-            <span id="siap-diambil-stats" class="hidden" style="font-size: 13px; font-weight: normal; margin-left: 15px; color: var(--text-muted);">
-              (Siap Diambil: <strong id="count-siap-table" style="color: var(--secondary);">0</strong> | Cancel: <strong id="count-cancel" style="color: var(--danger);">0</strong>)
-            </span>
           </h2>
           <div class="table-controls">
             <div id="arsip-filters" class="hidden" style="display: flex; gap: 10px;">
-              <select id="filter-kategori-arsip" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+              <select id="filter-kategori-arsip" class="form-control filter-select">
                  <option value="">Semua Kategori</option>
                  <option value="konfirmasi">Konfirmasi</option>
                  <option value="order_part">Order Part</option>
                  <option value="siap_diambil">Siap Diambil</option>
               </select>
-              <select id="filter-bulan" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
-                 <option value="">Semua Bulan</option>
-                 <option value="01">Januari</option>
-                 <option value="02">Februari</option>
-                 <option value="03">Maret</option>
-                 <option value="04">April</option>
-                 <option value="05">Mei</option>
-                 <option value="06">Juni</option>
-                 <option value="07">Juli</option>
-                 <option value="08">Agustus</option>
-                 <option value="09">September</option>
-                 <option value="10">Oktober</option>
-                 <option value="11">November</option>
-                 <option value="12">Desember</option>
-              </select>
-              <select id="filter-tahun" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
-                 <option value="">Semua Tahun</option>
-                 <option value="2026">2026</option>
-                 <option value="2025">2025</option>
-                 <option value="2024">2024</option>
+              <select id="filter-periode" class="form-control filter-select">
+                 <option value="">Semua Periode</option>
+                 <option value="bulan_ini">Bulan Ini</option>
+                 <option value="bulan_lalu">Bulan Lalu</option>
+                 <option value="tahun_ini">Tahun Ini</option>
               </select>
             </div>
             <div id="garansi-filters" class="hidden" style="margin-right: 10px;">
-              <select id="filter-garansi" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+              <select id="filter-garansi" class="form-control filter-select">
                  <option value="">Semua Garansi</option>
                  <option value="IW">IW</option>
                  <option value="OOW">OOW</option>
               </select>
             </div>
             <div id="konfirmasi-filters" class="hidden" style="margin-right: 10px;">
-              <select id="filter-konfirmasi" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+              <select id="filter-konfirmasi" class="form-control filter-select">
                  <option value="">Semua Konfirmasi</option>
                  <option value="Sudah">Sudah Konfirmasi</option>
                  <option value="Belum">Belum Konfirmasi</option>
+                 <option value="H1">Konfirmasi H+1</option>
+                 <option value="H2">Konfirmasi H+2</option>
+                 <option value="H3">Konfirmasi H+3 (atau >)</option>
               </select>
             </div>
             <div id="so-filters" class="hidden" style="margin-right: 10px;">
-              <select id="filter-so" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+              <select id="filter-so" class="form-control filter-select">
                  <option value="">Semua SO</option>
                  <option value="true">Ditemukan</option>
                  <option value="false">Belum Ditemukan</option>
               </select>
             </div>
             <div id="sort-filters" style="margin-right: 10px;">
-              <select id="filter-sort" class="form-control" style="width: auto; padding: 6px 12px; height: 35px;">
+              <select id="filter-sort" class="form-control filter-select">
                  <option value="terbaru">Sort: Terbaru (Default)</option>
                  <option value="terlama">Sort: Terlama</option>
                  <option value="az">Sort: Kode A-Z</option>
@@ -232,6 +286,14 @@
             <!-- Tombol khusus Order Part -->
             <button id="btn-export-part" class="btn btn-outline hidden" style="height: 35px;">
               <i class="fas fa-file-export"></i> Export Part (WA)
+            </button>
+            <!-- Tombol Kosongkan Arsip -->
+            <button id="btn-clear-arsip" class="btn btn-danger hidden" style="height: 35px;">
+              <i class="fas fa-trash-alt"></i> Kosongkan Data
+            </button>
+            <!-- Tombol Print (Khusus Siap Diambil) -->
+            <button id="btn-print-siap" class="btn btn-outline hidden" style="height: 35px; border-color: var(--text-dark); color: var(--text-dark);">
+              <i class="fas fa-print"></i> Print
             </button>
             <!-- Tombol Upload -->
             <button id="btn-upload-modal" class="btn btn-primary hidden-on-arsip" style="height: 35px;">
@@ -270,6 +332,9 @@
               <i class="fas fa-search"></i>
               <input type="text" id="search-alokasi" placeholder="Cari SN atau Kode...">
             </div>
+            <button id="btn-alokasi-user" class="btn btn-info" style="height: 35px; margin-right: 5px; background-color: #0dcaf0; color: #fff; border: none;">
+              <i class="fas fa-user-tag"></i> Alokasi User
+            </button>
             <button id="btn-alokasi-cabang" class="btn btn-success" style="height: 35px; margin-right: 5px;">
               <i class="fas fa-truck-loading"></i> Alokasi Cabang
             </button>
@@ -304,6 +369,7 @@
     </section>
 
   </main>
+    </div> <!-- end app-layout -->
 
   <!-- Upload Modal -->
   <div id="upload-modal" class="modal hidden">
@@ -617,6 +683,35 @@
     </div>
   </div>
   </div> <!-- End App Content -->
+  
+  <!-- Print Modal -->
+  <div id="print-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>Cetak Daftar Siap Diambil</h2>
+        <button class="close-btn" id="close-print-modal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted" style="margin-bottom: 15px; font-size: 13px;">Silakan pilih tanggal untuk dicantumkan pada header lembar cetak (Otomatis terisi besok/H+1).</p>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Tanggal Cetak</label>
+          <input type="date" id="print-date-input" class="form-control" style="width: 100%;">
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Ukuran Font Tanda Terima (px)</label>
+          <input type="number" id="print-font-input" class="form-control" style="width: 100%;" value="12" min="8" max="24">
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display: block; margin-bottom: 8px; font-weight: 600;">Kerapatan Baris / Padding (px)</label>
+          <input type="number" id="print-padding-input" class="form-control" style="width: 100%;" value="10" min="2" max="20">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-print">Batal</button>
+        <button class="btn btn-primary" id="btn-confirm-print"><i class="fas fa-print"></i> Lanjutkan Cetak</button>
+      </div>
+    </div>
+  </div>
 
   <div id="alokasi-cabang-modal" class="modal hidden">
     <div class="modal-content" style="max-width: 600px;">
@@ -660,6 +755,44 @@
       <div class="modal-footer">
         <button class="btn btn-outline" id="btn-cancel-alokasi-cabang">Batal</button>
         <button class="btn btn-primary" id="btn-save-alokasi-cabang" disabled><i class="fas fa-save"></i> Simpan Alokasi</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="alokasi-user-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2>Alokasi User</h2>
+        <button class="close-btn" id="close-alokasi-user"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Nomor Tanda Terima</label>
+          <input type="text" id="alokasi-user-tanda-terima" class="form-control" placeholder="Contoh: YGY-20261010-001">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">SN (No Seri / Produksi)</label>
+          <input type="text" id="alokasi-user-sn" class="form-control" placeholder="Ketik / Scan SN...">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Nama Barang (Otomatis)</label>
+          <input type="text" id="alokasi-user-nama-barang" class="form-control" placeholder="Nama barang akan muncul otomatis" readonly style="background-color: #f1f5f9;">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Tanggal Alokasi</label>
+          <input type="date" id="alokasi-user-tanggal" class="form-control">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Keterangan</label>
+          <input type="text" id="alokasi-user-keterangan" class="form-control" placeholder="Opsional...">
+        </div>
+        <div id="alokasi-user-warning" class="hidden" style="color: var(--danger); background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 15px;">
+          <i class="fas fa-exclamation-triangle"></i> Data part ini belum dimasukan, silahkan import data Stock dari Accurate.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-alokasi-user">Batal</button>
+        <button class="btn btn-primary" id="btn-save-alokasi-user"><i class="fas fa-save"></i> Simpan</button>
       </div>
     </div>
   </div>
