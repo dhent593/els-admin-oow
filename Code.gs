@@ -723,3 +723,84 @@ function clearArsipData() {
   }
 }
 
+// ----------------------------------------------------
+// KALENDER
+// ----------------------------------------------------
+function getKalenderSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName("Kalender");
+  if (!sheet) {
+    sheet = ss.insertSheet("Kalender");
+    sheet.appendRow(["ID_Event", "Judul", "Tanggal_Mulai", "Waktu_Mulai", "Tanggal_Selesai", "Waktu_Selesai", "Kategori", "Deskripsi", "Status"]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getKalenderEvents() {
+  try {
+    const sheet = getKalenderSheet();
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    
+    const headers = data[0];
+    const events = [];
+    for (let i = 1; i < data.length; i++) {
+      let row = data[i];
+      let event = {};
+      headers.forEach((h, idx) => {
+        // Formatter untuk object Date jika ada
+        if (row[idx] instanceof Date) {
+          event[h] = Utilities.formatDate(row[idx], "GMT+7", "dd/MM/yyyy");
+        } else {
+          event[h] = row[idx];
+        }
+      });
+      events.push(event);
+    }
+    return events;
+  } catch(e) {
+    return [];
+  }
+}
+
+function addKalenderEvent(evt) {
+  try {
+    const sheet = getKalenderSheet();
+    // ID format: EVT-YYYYMMDD-TIME
+    const now = new Date();
+    const id = "EVT-" + Utilities.formatDate(now, "GMT+7", "yyyyMMdd-HHmmss");
+    
+    sheet.appendRow([
+      id,
+      evt.Judul || "",
+      evt.Tanggal_Mulai || "",
+      evt.Waktu_Mulai || "",
+      evt.Tanggal_Selesai || "",
+      evt.Waktu_Selesai || "",
+      evt.Kategori || "",
+      evt.Deskripsi || "",
+      evt.Status || "Aktif"
+    ]);
+    return { success: true, id: id };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function deleteKalenderEvent(id) {
+  try {
+    if(!id) return { success: false, error: "ID kosong" };
+    const sheet = getKalenderSheet();
+    const data = sheet.getDataRange().getValues();
+    for(let i=1; i<data.length; i++) {
+      if(data[i][0] == id) {
+        sheet.deleteRow(i+1);
+        return { success: true };
+      }
+    }
+    return { success: false, error: "Event tidak ditemukan" };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}

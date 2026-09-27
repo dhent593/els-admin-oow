@@ -248,6 +248,14 @@ function setupNavigation() {
       const target = item.getAttribute('data-target');
       currentView = target;
       
+      // Update Topbar Title
+      const topbarTitle = document.getElementById('main-topbar-title');
+      const topbarCount = document.getElementById('main-topbar-count');
+      if (topbarTitle) {
+        topbarTitle.textContent = item.textContent.trim();
+        if (topbarCount) topbarCount.classList.add('hidden');
+      }
+      
       const arsipFilters = document.getElementById('arsip-filters');
       if (target === 'arsip') {
         arsipFilters.classList.remove('hidden');
@@ -287,6 +295,13 @@ function setupNavigation() {
         alokasiSec.offsetHeight;
         alokasiSec.style.animation = '';
         renderAlokasiTable();
+      } else if (target === 'calendar-view') {
+        const calSec = document.getElementById('calendar-view');
+        calSec.classList.remove('hidden');
+        initCalendar();
+      } else if (target === 'todo-view') {
+        const todoSec = document.getElementById('todo-view');
+        todoSec.classList.remove('hidden');
       } else {
         const table = document.getElementById('table-view');
         table.classList.remove('hidden');
@@ -298,6 +313,188 @@ function setupNavigation() {
     });
   });
 }
+
+let currentKalenderEvents = [];
+let kalenderCurrentDate = new Date();
+
+function openKalenderModal() {
+  document.getElementById('kalender-modal').classList.remove('hidden');
+}
+
+function saveKalenderEvent() {
+  const btn = document.getElementById('btn-save-kalender');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+  
+  const data = {
+    Judul: document.getElementById('kal-judul').value,
+    Tanggal_Mulai: document.getElementById('kal-tgl-mulai').value,
+    Waktu_Mulai: document.getElementById('kal-waktu-mulai').value,
+    Tanggal_Selesai: document.getElementById('kal-tgl-selesai').value,
+    Waktu_Selesai: document.getElementById('kal-waktu-selesai').value,
+    Kategori: document.getElementById('kal-kategori').value,
+    Deskripsi: document.getElementById('kal-deskripsi').value,
+  };
+  
+  google.script.run.withSuccessHandler(res => {
+    btn.disabled = false;
+    btn.innerHTML = 'Simpan Event';
+    if(res.success) {
+      document.getElementById('kalender-modal').classList.add('hidden');
+      loadKalenderData();
+      
+      document.getElementById('kal-judul').value = '';
+      document.getElementById('kal-deskripsi').value = '';
+    } else {
+      alert("Gagal menyimpan event: " + res.error);
+    }
+  }).addKalenderEvent(data);
+}
+
+function loadKalenderData() {
+  google.script.run.withSuccessHandler(events => {
+    currentKalenderEvents = events || [];
+    renderKalenderGrid();
+  }).getKalenderEvents();
+}
+
+function initCalendar() {
+  kalenderCurrentDate = new Date();
+  loadKalenderData();
+  renderKalenderGrid(); // Initial empty render to fix month text instantly
+}
+
+function renderKalenderGrid() {
+  const monthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+  const currentMonth = monthNames[kalenderCurrentDate.getMonth()];
+  const currentYear = kalenderCurrentDate.getFullYear();
+  const titleEl = document.getElementById('calendar-month-title');
+  if (titleEl) {
+    titleEl.innerHTML = `${currentMonth} ${currentYear} <i class="fas fa-chevron-down" style="font-size: 14px; color: var(--primary); margin-left: 10px;"></i>`;
+  }
+  
+  const grid = document.getElementById('calendar-days-grid');
+  if (!grid) return;
+  
+  let html = `
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Minggu</div>
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Senin</div>
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Selasa</div>
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Rabu</div>
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Kamis</div>
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Jumat</div>
+    <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Sabtu</div>
+  `;
+  
+  const firstDay = new Date(currentYear, kalenderCurrentDate.getMonth(), 1);
+  const lastDay = new Date(currentYear, kalenderCurrentDate.getMonth() + 1, 0);
+  const startingDay = firstDay.getDay(); 
+  const totalDays = lastDay.getDate();
+  
+  const prevMonthLastDay = new Date(currentYear, kalenderCurrentDate.getMonth(), 0).getDate();
+  for (let i = 0; i < startingDay; i++) {
+    let dayNum = prevMonthLastDay - startingDay + i + 1;
+    html += `<div style="padding: 10px; height: 120px; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: #fafafa;"><span style="color: var(--text-muted);">${dayNum}</span></div>`;
+  }
+  
+  const today = new Date();
+  for (let i = 1; i <= totalDays; i++) {
+    let isToday = (i === today.getDate() && kalenderCurrentDate.getMonth() === today.getMonth() && kalenderCurrentDate.getFullYear() === today.getFullYear());
+    let styleText = isToday ? `color: white; background: var(--primary); width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: bold;` : `color: var(--text-main);`;
+    
+    // Check events format YYYY-MM-DD
+    let dateStr = `${currentYear}-${String(kalenderCurrentDate.getMonth()+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+    let dayEvents = currentKalenderEvents.filter(e => e.Tanggal_Mulai === dateStr || (e.Tanggal_Mulai && e.Tanggal_Mulai.includes(String(i).padStart(2,'0') + '/' + String(kalenderCurrentDate.getMonth()+1).padStart(2,'0'))));
+    
+    let eventHtml = '';
+    dayEvents.forEach(e => {
+      let bg = e.Kategori === 'Urgent' ? '#ef4444' : (e.Kategori === 'Fixing' ? '#f59e0b' : (e.Kategori === 'Maintenance' ? '#3b82f6' : '#10b981'));
+      eventHtml += `<div style="background: ${bg}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;" title="${e.Judul}" onclick="openKalenderDetail('${e.ID_Event}')">${e.Judul}</div>`;
+    });
+    
+    html += `<div style="padding: 10px; height: 120px; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); overflow-y: auto;">
+      <span style="${styleText}">${i}</span>
+      ${eventHtml}
+    </div>`;
+  }
+  
+  let totalBoxes = startingDay + totalDays;
+  let remainingBoxes = 42 - totalBoxes;
+  if (remainingBoxes >= 7 && totalBoxes <= 35) remainingBoxes -= 7;
+  for (let i = 1; i <= remainingBoxes; i++) {
+    html += `<div style="padding: 10px; height: 120px; border-right: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: #fafafa;"><span style="color: var(--text-muted);">${i}</span></div>`;
+  }
+  
+  grid.innerHTML = html;
+  renderKalenderToday();
+}
+
+function openKalenderDetail(id) {
+  const e = currentKalenderEvents.find(x => x.ID_Event === id);
+  if(!e) return;
+  document.getElementById('kal-detail-judul').textContent = e.Judul;
+  document.getElementById('kal-detail-kategori').textContent = e.Kategori;
+  document.getElementById('kal-detail-status').textContent = e.Status || 'Aktif';
+  document.getElementById('kal-detail-waktu').textContent = `${e.Tanggal_Mulai} ${e.Waktu_Mulai} - ${e.Tanggal_Selesai} ${e.Waktu_Selesai}`;
+  document.getElementById('kal-detail-deskripsi').textContent = e.Deskripsi || 'Tidak ada deskripsi.';
+  
+  const btnDel = document.getElementById('btn-delete-kalender');
+  btnDel.onclick = () => deleteKalenderEventApi(id);
+  
+  document.getElementById('kalender-detail-modal').classList.remove('hidden');
+}
+
+function deleteKalenderEventApi(id) {
+  if(!confirm("Hapus event ini?")) return;
+  const btnDel = document.getElementById('btn-delete-kalender');
+  btnDel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+  
+  google.script.run.withSuccessHandler(res => {
+    btnDel.innerHTML = 'Hapus Event';
+    if(res.success) {
+      document.getElementById('kalender-detail-modal').classList.add('hidden');
+      loadKalenderData();
+    } else {
+      alert("Gagal menghapus event: " + res.error);
+    }
+  }).deleteKalenderEvent(id);
+}
+
+function renderKalenderToday() {
+  const container = document.getElementById('kalender-today-schedule');
+  if(!container) return;
+  
+  const today = new Date();
+  const dStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const dStr2 = `${String(today.getDate()).padStart(2,'0')}/${String(today.getMonth()+1).padStart(2,'0')}`;
+  
+  let todayEvents = currentKalenderEvents.filter(e => e.Tanggal_Mulai === dStr || (e.Tanggal_Mulai && e.Tanggal_Mulai.includes(dStr2)));
+  
+  if (todayEvents.length === 0) {
+    container.innerHTML = `<div style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 20px;">Tidak ada jadwal hari ini.</div>`;
+    return;
+  }
+  
+  let html = '';
+  todayEvents.forEach((e, idx) => {
+    let bg = e.Kategori === 'Urgent' ? '#fee2e2' : (e.Kategori === 'Fixing' ? '#fef3c7' : (e.Kategori === 'Maintenance' ? '#dbeafe' : '#d1fae5'));
+    let text = e.Kategori === 'Urgent' ? '#ef4444' : (e.Kategori === 'Fixing' ? '#f59e0b' : (e.Kategori === 'Maintenance' ? '#3b82f6' : '#10b981'));
+    
+    html += `
+      <div style="margin-bottom: 20px; ${idx > 0 ? 'padding-top: 20px; border-top: 1px solid var(--border-color);' : ''}">
+        <h5 style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 5px; cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='var(--primary)'" onmouseout="this.style.color='var(--text-main)'" onclick="openKalenderDetail('${e.ID_Event}')">${e.Judul}</h5>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;"><i class="far fa-clock"></i> ${e.Waktu_Mulai} - ${e.Waktu_Selesai}</p>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <span style="background: ${bg}; color: ${text}; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${e.Kategori}</span>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+}
+
+
 
 // ==================== DATA LOADING ====================
 function loadData(showSpinner = true) {
@@ -446,9 +643,7 @@ function updateDashboardStats() {
 
   for (let part in partsToOrder) {
     let data = partsToOrder[part];
-    let badgeHtml = data.count > 1 
-      ? `<span class="part-badge badge-danger"><i class="fas fa-exclamation-circle"></i> order ${data.count} pcs</span>` 
-      : `<span class="part-badge badge-normal">1 pcs</span>`;
+    let badgeHtml = `<span class="part-badge badge-normal">${data.count} pcs</span>`;
     
     // Generate clickable TT tags
     let codesHtml = '';
@@ -457,12 +652,14 @@ function updateDashboardStats() {
     });
       
     let partHtml = `
-      <div class="part-list-item">
+      <div class="part-list-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 2px 4px rgba(0,0,0,0.01); margin-bottom: 8px; transition: 0.2s;" onmouseover="this.style.boxShadow='var(--soft-shadow)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.01)'">
         <div class="part-name-text">
-          <div class="tt-container">${codesHtml}</div>
-          <div class="part-desc">${part}</div>
+          <div class="tt-container" style="display: flex; gap: 5px; flex-wrap: wrap;">${codesHtml}</div>
+          <div class="part-desc-text">${part}</div>
         </div>
-        ${badgeHtml}
+        <div style="flex-shrink: 0; margin-left: 10px;">
+          ${badgeHtml}
+        </div>
       </div>
     `;
 
@@ -532,17 +729,17 @@ function updateAvatarNotifications() {
 }
 
 function setupNotifications() {
-  const profileBadge = document.getElementById('user-profile-badge');
+  const notifBtn = document.getElementById('notif-btn');
   const notifDropdown = document.getElementById('notif-dropdown');
   
-  if (profileBadge && notifDropdown) {
-    profileBadge.addEventListener('click', function(e) {
+  if (notifBtn && notifDropdown) {
+    notifBtn.addEventListener('click', function(e) {
       e.stopPropagation();
       notifDropdown.classList.toggle('hidden');
     });
     
     document.addEventListener('click', function(e) {
-      if (!profileBadge.contains(e.target) && !notifDropdown.contains(e.target)) {
+      if (!notifBtn.contains(e.target) && !notifDropdown.contains(e.target)) {
         notifDropdown.classList.add('hidden');
       }
     });
@@ -604,7 +801,9 @@ function renderTable(kategori, searchTerm = "") {
      document.getElementById('sort-filters').classList.remove('hidden');
   }
 
-  document.getElementById('table-title').textContent = title;
+  document.getElementById('main-topbar-title').textContent = title;
+  const topbarCountBadge = document.getElementById('main-topbar-count');
+  if(topbarCountBadge) topbarCountBadge.classList.remove('hidden');
   
   // Filter Data
   let filteredData = appData.filter(d => {
@@ -747,7 +946,10 @@ function renderTable(kategori, searchTerm = "") {
   }
 
   // Update counter
-  document.getElementById('table-count').textContent = filteredData.length;
+  if(topbarCountBadge) topbarCountBadge.textContent = filteredData.length;
+  // Also keep updating the old table-count just in case
+  const oldTableCount = document.getElementById('table-count');
+  if(oldTableCount) oldTableCount.textContent = filteredData.length;
   
   // Blok siap-diambil-stats dihapus karena pindah ke dashboard
 
@@ -755,18 +957,19 @@ function renderTable(kategori, searchTerm = "") {
   const tbody = document.getElementById('table-body');
   
   // Render Headers
-  let wPelanggan = kategori === 'order-part' ? '140px' : 'auto';
-  let wUnit = kategori === 'order-part' ? '150px' : 'auto';
-
-  let wKode = kategori === 'so' ? 'width: 170px; min-width: 170px; max-width: 170px; white-space: nowrap;' : 'width: 220px;';
-  let headersHTML = `
-    <th style="${wKode}">Kode / Status</th>
-  `;
-  
-  if (kategori !== 'so') {
-    headersHTML += `
-      <th style="width: ${wPelanggan};">Pelanggan</th>
-      <th style="width: ${wUnit};">Unit / SN</th>
+  let headersHTML = '';
+  if (kategori === 'so') {
+    headersHTML = `<th style="width: 170px; min-width: 170px; max-width: 170px; white-space: nowrap;">Kode / Status</th>`;
+  } else if (kategori === 'order-part') {
+    headersHTML = `
+      <th style="width: 210px;">Pelanggan & Tanda Terima</th>
+      <th style="width: 170px;">Unit / SN</th>
+    `;
+  } else {
+    headersHTML = `
+      <th style="width: 220px;">Kode / Status</th>
+      <th style="width: auto;">Pelanggan</th>
+      <th style="width: auto;">Unit / SN</th>
     `;
   }
   
@@ -910,11 +1113,17 @@ function renderTable(kategori, searchTerm = "") {
          garansiDisplay = `<br><small style="color: ${gColor}; font-weight: 700;">Garansi: ${d.Garansi}</small>`;
       }
       
+      let cellKodeHTML = "";
+      if (kategori === 'order-part') {
+        cellKodeHTML = `<div style="font-weight: 600; color: var(--text-main); margin-bottom: 4px; text-transform: uppercase;">${d.Pelanggan || '-'}</div>` + kodeDisplay + garansiDisplay;
+      } else {
+        cellKodeHTML = kodeDisplay + (kategori === 'konfirmasi' ? '' : `<br><small class="text-muted" style="white-space: normal;">${d.Status || '-'}</small>`) + garansiDisplay;
+      }
+      
       let customerInfo = "";
       if (kategori !== 'so') {
         if (kategori === 'order-part') {
-          customerInfo = `<td style="max-width: 140px; white-space: normal; word-wrap: break-word;">${d.Pelanggan || '-'}</td>
-               <td style="max-width: 150px; white-space: normal; word-wrap: break-word; font-size: 13px;">${d.Unit || '-'}<br><small class="text-muted" style="font-size: 11px;">${d.SN || '-'}</small></td>`;
+          customerInfo = `<td style="max-width: 170px; white-space: normal; word-wrap: break-word; font-size: 11px; line-height: 1.3;">${d.Unit || '-'}<br><small class="text-muted" style="font-size: 10px;">${d.SN || '-'}</small></td>`;
         } else {
           let unitStyle = kategori === 'konfirmasi' ? 'font-size: 13px;' : '';
           let snStyle = kategori === 'konfirmasi' ? 'font-size: 11px;' : '';
@@ -942,8 +1151,7 @@ function renderTable(kategori, searchTerm = "") {
       rowsHTML += `
         <tr style="${rowStyle}">
           <td style="${kodeStyle}">
-            ${kodeDisplay}
-            ${(kategori === 'konfirmasi' || kategori === 'order-part') ? '' : `<br><small class="text-muted" style="white-space: normal;">${d.Status || '-'}</small>`}${garansiDisplay}
+            ${cellKodeHTML}
           </td>
           ${customerInfo}
           ${extraCol}
@@ -975,7 +1183,14 @@ function renderAlokasiTable(searchTerm = "") {
     );
   }
   
-  document.getElementById('table-count-alokasi').textContent = filteredData.length;
+  const topbarCountBadge = document.getElementById('main-topbar-count');
+  if(topbarCountBadge) {
+    topbarCountBadge.textContent = filteredData.length;
+    topbarCountBadge.classList.remove('hidden');
+  }
+  
+  const oldAlokasiCount = document.getElementById('table-count-alokasi');
+  if(oldAlokasiCount) oldAlokasiCount.textContent = filteredData.length;
   
   if (filteredData.length === 0) {
     document.getElementById('alokasi-table').style.display = 'none';
@@ -2611,5 +2826,25 @@ function setupAlokasiUser() {
       .saveAlokasi(tandaTerima, sn, nama, dStr, keterangan);
   });
 }
+
+// Global Search Shortcut (Ctrl+F)
+document.addEventListener('keydown', function(e) {
+  if (e.ctrlKey && (e.key === 'f' || e.key === 'F')) {
+    e.preventDefault(); // Prevent default browser search
+    if (currentView === 'alokasi-part') {
+      const searchAlokasi = document.getElementById('search-alokasi');
+      if (searchAlokasi) {
+        searchAlokasi.focus();
+        searchAlokasi.select();
+      }
+    } else {
+      const searchInput = document.getElementById('search-input');
+      if (searchInput) {
+        searchInput.focus();
+        searchInput.select();
+      }
+    }
+  }
+});
 
 </script>

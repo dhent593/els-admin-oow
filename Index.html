@@ -6,6 +6,7 @@
   <title>ELS Admin Service Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
   
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
@@ -18,7 +19,8 @@
       <div class="brand" style="justify-content: center; margin-bottom: 20px;">
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTn_zSpGdTkwiGoPqLwZAqzNbpmgUZ8lpTw9cuLwKFI1w&s=10" alt="Logo" style="height: 60px; border-radius: 8px;">
       </div>
-      <h2 style="text-align: center; margin-bottom: 25px; color: var(--text-main);">Selamat Datang</h2>
+      <h2 style="text-align: center; margin-bottom: 8px; color: var(--text-main); font-weight: 800; font-size: 24px;">Welcome Back!</h2>
+      <p style="text-align: center; margin-bottom: 25px; color: var(--text-muted); font-size: 14px;">Sign in to ELS Admin Dashboard</p>
       
       <div id="login-alert" class="hidden" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 13px; text-align: center; border: 1px solid var(--danger);"></div>
       
@@ -27,13 +29,13 @@
         <input type="text" id="login-username" class="form-control" placeholder="Masukkan username">
       </div>
       <div style="margin-bottom: 25px;">
-        <label style="display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: var(--text-muted);">Password</label>
+        <label style="display: block; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: var(--text-main);">Password</label>
         <div style="position: relative;">
-          <input type="password" id="login-password" class="form-control" placeholder="Masukkan password" style="padding-right: 40px;">
-          <i class="fas fa-eye" id="toggle-password" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted);"></i>
+          <input type="password" id="login-password" class="form-control" placeholder="Masukkan password" style="padding-right: 40px; background: transparent;">
+          <i class="bx bx-show" id="toggle-password" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); cursor: pointer; color: var(--text-muted); font-size: 18px;"></i>
         </div>
       </div>
-      <button id="btn-login" class="btn btn-primary" style="width: 100%; justify-content: center;">Masuk</button>
+      <button id="btn-login" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; border-radius: 12px; margin-top: 10px;">Sign In</button>
     </div>
   </div>
 
@@ -44,12 +46,12 @@
       <div class="brand">
         <img src="data:image/png;base64,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" alt="Logo" style="height: 35px; border-radius: 6px; margin-right: 1px;">
         <div style="display: flex; flex-direction: column; line-height: 1.2; justify-content: center;">
-          <span style="font-size: 16px;">ELS ADMIN</span>
+          <span style="font-size: 16px;">ELS ADMIN OOW</span>
           <span style="font-size: 11px; color: var(--primary);">Admin-OOW</span>
         </div>
       </div>
       <button id="hamburger-btn" class="hamburger-btn">
-        <i class="fas fa-bars"></i>
+        <i class="bx bx-menu" style="font-size: 24px;"></i>
       </button>
     </header>
 
@@ -65,52 +67,75 @@
             </div>
           </div>
           <button id="close-sidebar-btn" class="close-sidebar-btn hidden-desktop">
-            <i class="fas fa-times"></i>
+            <i class="bx bx-x"></i>
           </button>
         </div>
         
         <ul class="nav-menu" id="nav-menu">
-          <li class="nav-item active" data-target="dashboard"><i class="fas fa-home nav-icon"></i> Dashboard</li>
-          <li class="nav-item" data-target="konfirmasi"><i class="fas fa-clock nav-icon"></i> Konfirmasi</li>
-          <li class="nav-item" data-target="order-part"><i class="fas fa-cogs nav-icon"></i> Order Part</li>
-          <li class="nav-item" data-target="alokasi-part"><i class="fas fa-boxes nav-icon"></i> Alokasi Part</li>
-          <li class="nav-item" data-target="siap-diambil"><i class="fas fa-check-circle nav-icon"></i> Siap Diambil</li>
-          <li class="nav-item" data-target="so"><i class="fas fa-warehouse nav-icon"></i> SO Unit</li>
-          <li class="nav-item" data-target="arsip"><i class="fas fa-archive nav-icon"></i> Arsip Selesai</li>
+          <li class="nav-item active" data-target="dashboard"><i class="bx bx-home nav-icon" style="font-size: 20px;"></i> Dashboard</li>
+          <li class="nav-item" data-target="konfirmasi"><i class="bx bx-time nav-icon" style="font-size: 20px;"></i> Konfirmasi</li>
+          <li class="nav-item" data-target="order-part"><i class="bx bx-cog nav-icon" style="font-size: 20px;"></i> Order Part</li>
+          <li class="nav-item" data-target="alokasi-part"><i class="bx bx-box nav-icon" style="font-size: 20px;"></i> Alokasi Part</li>
+          <li class="nav-item" data-target="siap-diambil"><i class="bx bx-check-circle nav-icon" style="font-size: 20px;"></i> Siap Diambil</li>
+          <li class="nav-item" data-target="so"><i class="bx bx-store nav-icon" style="font-size: 20px;"></i> SO Unit</li>
+          <li class="nav-item" data-target="arsip"><i class="bx bx-archive nav-icon" style="font-size: 20px;"></i> Arsip Selesai</li>
+          <li class="nav-item" data-target="calendar-view"><i class="bx bx-calendar nav-icon" style="font-size: 20px;"></i> Kalender</li>
+          <li class="nav-item" data-target="todo-view"><i class="bx bx-task nav-icon" style="font-size: 20px;"></i> Todo List</li>
         </ul>
 
         <div class="sidebar-footer" id="sidebar-right" style="position: relative; margin-top: auto;">
-          <div style="display: flex; align-items: center; justify-content: space-between; background: var(--bg-color); padding: 8px; border-radius: 12px; border: 1px solid var(--border-color);">
-            <div class="user-profile" id="user-profile-badge" style="cursor: pointer; display: flex; align-items: center; gap: 10px; border: none; background: transparent; padding: 0; flex: 1; min-width: 0;">
-              <div style="position: relative; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                <div class="user-avatar" id="user-avatar-initial" style="width: 32px; height: 32px;">A</div>
-                <div id="avatar-notification-badge" class="hidden" style="position: absolute; top: -4px; right: -4px; background: var(--danger); color: white; border-radius: 50%; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: bold; border: 2px solid white; z-index: 2;">0</div>
-              </div>
-              <div class="user-name" id="user-avatar-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px;">Admin</div>
-            </div>
-
-            <div class="sidebar-actions" style="display: flex; align-items: center; gap: 4px;">
-              <button onclick="openSettingsModal()" title="Pengaturan" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s;" onmouseover="this.style.background='rgba(0,0,0,0.05)'; this.style.color='var(--text-main)';" onmouseout="this.style.background='transparent'; this.style.color='var(--text-muted)';">
-                <i class="fas fa-cog"></i>
-              </button>
-              <button id="btn-logout" title="Keluar" style="background: transparent; border: none; color: var(--danger); cursor: pointer; padding: 8px; border-radius: 8px; transition: 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.1)';" onmouseout="this.style.background='transparent';">
-                <i class="fas fa-sign-out-alt"></i>
-              </button>
-            </div>
-          </div>
-          
-          <!-- Notification Dropdown -->
-          <div id="notif-dropdown" class="hidden" style="position: absolute; bottom: 100%; left: 0; width: 100%; background: white; border-radius: 8px; box-shadow: 0 -5px 25px rgba(0,0,0,0.15); border: 1px solid var(--border-color); z-index: 1000; overflow: hidden; margin-bottom: 10px;">
-              <div style="padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 14px; background: #f8fafc;">Notifikasi Konfirmasi</div>
-              <div id="notif-list" style="padding: 15px; font-size: 13px; color: var(--text-dark); display: flex; align-items: center; gap: 12px; background: white; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'" onclick="document.querySelector('.nav-item[data-target=&quot;siap-diambil&quot;]').click(); document.getElementById('notif-dropdown').classList.add('hidden');">
-                  <!-- Content injected by JS -->
-              </div>
-          </div>
+          <!-- Empty or minimal footer -->
         </div>
       </aside>
 
       <!-- Main Content Area -->
       <main class="main-content">
+        <!-- Top Bar -->
+        <div class="topbar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; background: transparent; flex-wrap: wrap; gap: 20px;">
+          
+          <div class="topbar-title">
+            <h1 style="color: var(--text-main); font-size: 28px; margin-bottom: 5px; display: flex; align-items: center; gap: 12px;">
+              <span id="main-topbar-title">Dashboard</span>
+              <span id="main-topbar-count" class="badge-count hidden" style="background: rgba(249, 115, 22, 0.1); color: var(--primary); border: 1px solid var(--primary); width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold;">0</span>
+            </h1>
+            <p style="color: var(--text-muted); font-size: 14px;">Welcome to ELS Admin Service Dashboard</p>
+          </div>
+
+          <div class="topbar-right" style="display: flex; align-items: center; gap: 25px;">
+            <div class="topbar-actions" style="display: flex; align-items: center; gap: 15px;">
+              <div style="position: relative;">
+                <button id="notif-btn" title="Notifications" style="background: var(--panel-bg); border: none; width: 45px; height: 45px; border-radius: 50%; color: var(--text-muted); cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.color='var(--primary)';" onmouseout="this.style.color='var(--text-muted)';">
+                  <i class="bx bx-bell" style="font-size: 22px;"></i>
+                  <div id="avatar-notification-badge" class="hidden" style="position: absolute; top: 6px; right: 6px; background: var(--primary); color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: 2px solid var(--panel-bg); z-index: 2;">0</div>
+                </button>
+                
+                <!-- Notification Dropdown -->
+                <div id="notif-dropdown" class="hidden" style="position: absolute; top: 60px; right: 0; width: 300px; background: white; border-radius: 12px; box-shadow: var(--card-shadow); border: 1px solid var(--border-color); z-index: 1000; overflow: hidden;">
+                    <div style="padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: 700; font-size: 14px; background: var(--bg-color);">Notifikasi Konfirmasi</div>
+                    <div id="notif-list" style="padding: 15px; font-size: 13px; color: var(--text-main); display: flex; align-items: center; gap: 12px; background: white; transition: background 0.2s; cursor: pointer;" onmouseover="this.style.background='var(--bg-color)'" onmouseout="this.style.background='white'" onclick="document.querySelector('.nav-item[data-target=&quot;siap-diambil&quot;]').click(); document.getElementById('notif-dropdown').classList.add('hidden');">
+                        <!-- Content injected by JS -->
+                    </div>
+                </div>
+              </div>
+
+              <button onclick="openSettingsModal()" title="Pengaturan" style="background: var(--panel-bg); border: none; width: 45px; height: 45px; border-radius: 50%; color: var(--text-muted); cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.color='var(--primary)';" onmouseout="this.style.color='var(--text-muted)';">
+                <i class="bx bx-cog" style="font-size: 22px;"></i>
+              </button>
+
+              <button id="btn-logout" title="Keluar" style="background: var(--panel-bg); border: none; width: 45px; height: 45px; border-radius: 50%; color: var(--danger); cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.08); transition: 0.2s; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='var(--danger)'; this.style.color='white';" onmouseout="this.style.background='var(--panel-bg)'; this.style.color='var(--danger)';">
+                <i class="bx bx-log-out" style="font-size: 22px;"></i>
+              </button>
+              
+              <!-- User Profile (Avatar Only) -->
+              <div class="user-profile" id="user-profile-badge" style="cursor: pointer; display: flex; align-items: center; border: none; background: transparent; padding: 0;">
+                <div class="user-avatar" id="user-avatar-initial" style="width: 45px; height: 45px; font-size: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">A</div>
+                <div style="display: none;">
+                  <span class="user-name" id="user-avatar-name">Admin</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
     
     <div id="loading-overlay" class="loading-overlay hidden">
       <div class="spinner"></div>
@@ -119,16 +144,6 @@
 
     <!-- Dashboard View -->
     <section id="dashboard" class="view-section active">
-      <div class="welcome-banner">
-        <div>
-          <h1>Halo Admin!</h1>
-          <p>Berikut ringkasan status service ELS untuk periode aktif.</p>
-        </div>
-        <div class="clock-widget">
-          <div id="live-time" class="time-display">00:00:00</div>
-          <div id="live-date" class="date-display">Memuat tanggal...</div>
-        </div>
-      </div>
 
       <div class="stats-grid">
         <div class="stat-card">
@@ -155,45 +170,45 @@
       </div>
       
       <!-- Detail Statistik Siap Diambil -->
-      <div class="dashboard-detail-stats" style="margin-bottom: 40px; background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); border: 1px solid var(--border-color);">
-        <h3 style="font-size: 15px; margin-bottom: 15px; color: var(--text-dark); border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">Detail Status: Siap Diambil</h3>
-        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+      <div class="dashboard-detail-stats" style="margin-bottom: 40px; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow); border: none;">
+        <h3 style="font-size: 16px; margin-bottom: 25px; color: var(--text-main); padding-bottom: 0px; border-bottom: none; font-weight: 700;">Detail Status: Siap Diambil</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 20px;">
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Murni Siap Diambil</div>
-            <div id="dash-siap-murni" style="font-size: 20px; font-weight: bold; color: var(--secondary);">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Murni Siap Diambil</div>
+            <div id="dash-siap-murni" style="font-size: 26px; font-weight: 800; color: var(--secondary);">0</div>
           </div>
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #fef2f2; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Cancel</div>
-            <div id="dash-siap-cancel" style="font-size: 20px; font-weight: bold; color: var(--danger);">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Cancel</div>
+            <div id="dash-siap-cancel" style="font-size: 26px; font-weight: 800; color: var(--danger);">0</div>
           </div>
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #f0fdf4; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Sudah Konfirmasi</div>
-            <div id="dash-siap-sudah-konf" style="font-size: 20px; font-weight: bold; color: #16a34a;">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Sudah Konfirmasi</div>
+            <div id="dash-siap-sudah-konf" style="font-size: 26px; font-weight: 800; color: #16a34a;">0</div>
           </div>
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #fffbeb; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Belum Konfirmasi</div>
-            <div id="dash-siap-belum-konf" style="font-size: 20px; font-weight: bold; color: #d97706;">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Belum Konfirmasi</div>
+            <div id="dash-siap-belum-konf" style="font-size: 26px; font-weight: 800; color: #d97706;">0</div>
           </div>
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Konfirmasi H+1</div>
-            <div id="dash-siap-h1" style="font-size: 20px; font-weight: bold; color: #2563eb;">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Konfirmasi H+1</div>
+            <div id="dash-siap-h1" style="font-size: 26px; font-weight: 800; color: #2563eb;">0</div>
           </div>
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Konfirmasi H+2</div>
-            <div id="dash-siap-h2" style="font-size: 20px; font-weight: bold; color: #2563eb;">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Konfirmasi H+2</div>
+            <div id="dash-siap-h2" style="font-size: 26px; font-weight: 800; color: #2563eb;">0</div>
           </div>
           
-          <div class="detail-stat-box" style="flex: 1; min-width: 120px; background: #eff6ff; padding: 15px; border-radius: 8px; text-align: center;">
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 5px;">Konfirmasi H+3 (atau >)</div>
-            <div id="dash-siap-h3" style="font-size: 20px; font-weight: bold; color: #2563eb;">0</div>
+          <div class="detail-stat-box" style="background: var(--bg-color); padding: 20px; border-radius: var(--radius-md); text-align: center; border: 1px solid var(--border-color); transition: 0.2s;" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='var(--soft-shadow)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px;">Konfirmasi H+3 (atau >)</div>
+            <div id="dash-siap-h3" style="font-size: 26px; font-weight: 800; color: #2563eb;">0</div>
           </div>
-
+          
         </div>
       </div>
 
@@ -224,14 +239,133 @@
       </div>
     </section>
 
+    <!-- Calendar View (Dummy) -->
+    <section id="calendar-view" class="view-section hidden">
+      <div style="display: flex; gap: 30px;">
+        <!-- Left Sidebar -->
+        <div style="width: 250px; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow);">
+          <button onclick="openKalenderModal()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+            <i class="fas fa-plus"></i> New Event
+          </button>
+          
+          <h4 style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500;">My Schedule Today</h4>
+          
+          <div id="kalender-today-schedule">
+            <div style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 20px;">Memuat jadwal...</div>
+          </div>
+          
+        </div>
+
+        <!-- Main Calendar Area -->
+        <div style="flex: 1; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 id="calendar-month-title" style="font-size: 24px; font-weight: 700; color: var(--text-main);">February 2021 <i class="fas fa-chevron-down" style="font-size: 14px; color: var(--primary); margin-left: 10px;"></i></h2>
+            <div style="display: flex; background: var(--bg-color); border-radius: 20px; padding: 4px;">
+              <button style="border: none; background: var(--primary-light); color: var(--primary); padding: 6px 15px; border-radius: 15px; font-weight: 600; font-size: 13px; cursor: pointer;">Monthly</button>
+              <button style="border: none; background: transparent; color: var(--text-muted); padding: 6px 15px; border-radius: 15px; font-weight: 500; font-size: 13px; cursor: pointer;">Weekly</button>
+              <button style="border: none; background: transparent; color: var(--text-muted); padding: 6px 15px; border-radius: 15px; font-weight: 500; font-size: 13px; cursor: pointer;">Day</button>
+            </div>
+          </div>
+          
+          <!-- Calendar Grid -->
+          <div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;">
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Sunday</div>
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Monday</div>
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Tuesday</div>
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Wednesday</div>
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Thursday</div>
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Friday</div>
+            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Saturday</div>
+            
+            <!-- Rows injected by JS -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- To Do View (Dummy) -->
+    <section id="todo-view" class="view-section hidden">
+      <div style="display: flex; gap: 30px;">
+        <!-- Left Sidebar -->
+        <div style="width: 250px; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow);">
+          <button style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+            <i class="fas fa-plus"></i> New Task
+          </button>
+          
+          <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
+            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--primary); font-weight: 600; font-size: 14px; cursor: pointer;"><i class="fas fa-exclamation-circle" style="font-size: 16px;"></i> Important</li>
+            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer;"><i class="fas fa-check-double" style="font-size: 16px;"></i> Completed</li>
+            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer;"><i class="fas fa-trash" style="font-size: 16px;"></i> Removed</li>
+            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer;"><i class="fas fa-clock" style="font-size: 16px;"></i> Due Soon</li>
+          </ul>
+          
+          <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; font-weight: 500; display: flex; justify-content: space-between; align-items: center;">Labels <i class="fas fa-ellipsis-h"></i></h4>
+          <ul style="list-style: none; padding: 0;">
+            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: var(--primary);"></i> Team</li>
+            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: #10b981;"></i> Low</li>
+            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: #f59e0b;"></i> Medium</li>
+            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: #ef4444;"></i> High</li>
+          </ul>
+        </div>
+
+        <!-- Main Task List Area -->
+        <div style="flex: 1;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;"><i class="fas fa-exclamation-circle"></i> Important Task</h2>
+            <div style="display: flex; gap: 10px;">
+              <button style="border: none; background: white; color: var(--text-main); padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: var(--soft-shadow);">Newest <i class="fas fa-chevron-down"></i></button>
+              <button style="border: none; background: var(--primary-light); color: var(--primary); width: 35px; height: 35px; border-radius: 8px; cursor: pointer;"><i class="fas fa-bars"></i></button>
+            </div>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Task Item 1 -->
+            <div style="background: var(--panel-bg); border-radius: 16px; padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--soft-shadow);">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <input type="checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                <div>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">January 24th, 2021 04:25 PM</div>
+                  <div style="font-size: 15px; font-weight: 600; color: var(--text-main);">Fix login & register form design</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="background: var(--primary-light); color: var(--primary); padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> Team</span>
+                <span style="background: #fef3c7; color: #f59e0b; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> Important</span>
+                <div style="display: flex;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -10px; z-index: 3;">A</div>
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: #cbd5e1; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -10px; z-index: 2;">B</div>
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: #94a3b8; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -10px; z-index: 1;">C</div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Task Item 2 -->
+            <div style="background: var(--panel-bg); border-radius: 16px; padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--soft-shadow);">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <input type="checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
+                <div>
+                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">January 24th, 2021 04:25 PM</div>
+                  <div style="font-size: 15px; font-weight: 600; color: var(--text-main); text-decoration: line-through; opacity: 0.7;">Redesign navigation bar in Geex Landing page</div>
+                </div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="background: var(--primary-light); color: var(--primary); padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> Team</span>
+                <span style="background: #fee2e2; color: #ef4444; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> High</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Reusable Table Container -->
     <section id="table-view" class="view-section hidden">
       <div class="table-card">
-        <div class="table-header-bar">
-          <h2>
-            <span id="table-title">Data Tabel</span> 
-            <span class="badge-count" id="table-count">0</span>
-          </h2>
+        <div class="table-header-bar" style="justify-content: space-between;">
+          <div class="search-bar" style="height: 35px;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Cari Kode, Pelanggan, Unit / SN...">
+          </div>
           <div class="table-controls">
             <div id="arsip-filters" class="hidden" style="display: flex; gap: 10px;">
               <select id="filter-kategori-arsip" class="form-control filter-select">
@@ -279,10 +413,6 @@
                  <option value="za">Sort: Kode Z-A</option>
               </select>
             </div>
-            <div class="search-bar" style="height: 35px;">
-              <i class="fas fa-search"></i>
-              <input type="text" id="search-input" placeholder="Cari Kode, Pelanggan, Unit / SN...">
-            </div>
             <!-- Tombol khusus Order Part -->
             <button id="btn-export-part" class="btn btn-outline hidden" style="height: 35px;">
               <i class="fas fa-file-export"></i> Export Part (WA)
@@ -325,13 +455,12 @@
     <!-- Alokasi Part View -->
     <section id="alokasi-part" class="view-section hidden">
       <div class="table-card">
-        <div class="table-header-bar">
-          <h2>Data Alokasi Part <span class="badge-count" id="table-count-alokasi">0</span></h2>
+        <div class="table-header-bar" style="justify-content: space-between;">
+          <div class="search-bar" style="height: 35px;">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-alokasi" placeholder="Cari SN atau Kode...">
+          </div>
           <div class="table-controls">
-            <div class="search-bar" style="height: 35px;">
-              <i class="fas fa-search"></i>
-              <input type="text" id="search-alokasi" placeholder="Cari SN atau Kode...">
-            </div>
             <button id="btn-alokasi-user" class="btn btn-info" style="height: 35px; margin-right: 5px; background-color: #0dcaf0; color: #fff; border: none;">
               <i class="fas fa-user-tag"></i> Alokasi User
             </button>
@@ -682,6 +811,89 @@
       </div>
     </div>
   </div>
+  
+  <!-- Kalender Modal -->
+  <div id="kalender-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>Tambah Event Baru</h2>
+        <button class="close-btn" id="close-kalender" onclick="document.getElementById('kalender-modal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Judul Event</label>
+          <input type="text" id="kal-judul" class="form-control" placeholder="Contoh: Maintenance Server">
+        </div>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Tanggal Mulai</label>
+            <input type="date" id="kal-tgl-mulai" class="form-control">
+          </div>
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Waktu Mulai</label>
+            <input type="time" id="kal-waktu-mulai" class="form-control">
+          </div>
+        </div>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Tanggal Selesai</label>
+            <input type="date" id="kal-tgl-selesai" class="form-control">
+          </div>
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Waktu Selesai</label>
+            <input type="time" id="kal-waktu-selesai" class="form-control">
+          </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Kategori</label>
+          <select id="kal-kategori" class="form-control">
+            <option value="Urgent">Urgent</option>
+            <option value="Fixing">Fixing</option>
+            <option value="Maintenance">Maintenance</option>
+            <option value="Meeting">Meeting</option>
+            <option value="Lainnya">Lainnya</option>
+          </select>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Deskripsi Singkat</label>
+          <textarea id="kal-deskripsi" class="form-control" rows="2" placeholder="Detail event..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('kalender-modal').classList.add('hidden')">Batal</button>
+        <button class="btn btn-primary" id="btn-save-kalender" onclick="saveKalenderEvent()">Simpan Event</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kalender Detail Modal -->
+  <div id="kalender-detail-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2 id="kal-detail-judul">Judul Event</h2>
+        <button class="close-btn" onclick="document.getElementById('kalender-detail-modal').classList.add('hidden')"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+          <span id="kal-detail-kategori" style="background: var(--primary-light); color: var(--primary); padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">Kategori</span>
+          <span id="kal-detail-status" style="background: #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">Aktif</span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Waktu Pelaksanaan</div>
+          <div id="kal-detail-waktu" style="font-size: 14px; font-weight: 500; color: var(--text-main);">Tanggal - Jam</div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 3px;">Deskripsi</div>
+          <div id="kal-detail-deskripsi" style="font-size: 14px; color: var(--text-main); white-space: pre-wrap;">Tidak ada deskripsi.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="document.getElementById('kalender-detail-modal').classList.add('hidden')">Tutup</button>
+        <button class="btn btn-danger" id="btn-delete-kalender" style="background: var(--danger); color: white; border: none;">Hapus Event</button>
+      </div>
+    </div>
+  </div>
+  
   </div> <!-- End App Content -->
   
   <!-- Print Modal -->
