@@ -18,6 +18,12 @@ Aplikasi berbasis web menggunakan Google Apps Script untuk manajemen dan dashboa
 - **Upload Data Massal**: Fitur import atau upload data secara massal (untuk kategori konfirmasi, order part, siap diambil) yang telah dilengkapi dengan mekanisme *locking* untuk mencegah *race condition* jika ada beberapa admin yang beroperasi bersamaan.
 - **Pengaturan Dinamis**: Mengatur highlight (warna) berdasarkan kata kunci (keyword) tertentu pada data servis.
 - **Manajemen Cabang**: Mendata dan menyimpan daftar cabang yang ada.
+- **Todo List Interaktif**: Manajemen daftar tugas harian yang dilengkapi dengan fitur:
+  - **Penyaringan & Label (Filters)**: Mengkategorikan tugas berdasarkan tab (Penting, Selesai, Dihapus, Tenggat Waktu Dekat) dan Label Prioritas.
+  - **Pengurutan (Auto-sort)**: Tugas yang telah selesai otomatis dipindahkan ke bawah, serta dapat diurutkan berdasarkan yang terbaru/terlama.
+  - **Optimistic UI Update**: Perubahan data (centang selesai, edit) seketika diperbarui di layar dan disimpan di belakang layar (background) tanpa efek loading, dilengkapi dengan *toast notification*.
+  - **Desain Responsif**: Tata letak fleksibel (berbasis flexbox) yang otomatis menyesuaikan diri pada perangkat seluler.
+- **Kalender**: Tampilan khusus untuk memantau tenggat waktu atau jadwal operasional.
 
 ## Persiapan dan Deployment
 
@@ -42,3 +48,5 @@ Sistem ini akan mengelola (dan membuat secara otomatis jika belum ada) beberapa 
 4. **`Alokasi Part`**: Histori alokasi part untuk servis.
 5. **`Cabang`**: Daftar cabang yang terdaftar.
 6. **`Users`**: Menyimpan data username dan password untuk fitur login (Autentikasi).
+7. **`Todo_List`**: Basis data untuk tugas-tugas yang dikelola pengguna.
+8. **`Kalender`**: Data jadwal acara atau pengingat.
