@@ -950,4 +950,179 @@ tbody tr:hover { background: var(--bg-color); }
 .sort-triangle:hover {
   color: var(--primary);
 }
+
+/* Custom Todo Checkbox */
+.custom-checkbox {
+  appearance: none;
+  background-color: #fff;
+  margin: 0;
+  font: inherit;
+  color: currentColor;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.custom-checkbox::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  transform: scale(0);
+  transition: 120ms transform ease-in-out;
+  box-shadow: inset 1em 1em white;
+  background-color: white;
+  transform-origin: center;
+  clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+.custom-checkbox:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+.custom-checkbox:checked::before {
+  transform: scale(1);
+}
+
+/* Calendar Responsive Styles */
+.calendar-layout-container {
+  display: flex;
+  gap: 30px;
+}
+.calendar-sidebar {
+  width: 250px;
+  background: var(--panel-bg);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  box-shadow: var(--card-shadow);
+}
+.calendar-main-area {
+  flex: 1;
+  background: var(--panel-bg);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.calendar-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.calendar-nav-buttons {
+  display: flex;
+  background: var(--bg-color);
+  border-radius: 20px;
+  padding: 4px;
+}
+.cal-nav-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 6px 15px;
+  border-radius: 15px;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.cal-nav-btn.active {
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+.calendar-views-wrapper {
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+.calendar-view-container {
+  display: none;
+}
+.calendar-view-container.active-view {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Todo Layout Styles */
+.todo-layout-container {
+  display: flex;
+  gap: 30px;
+}
+.todo-sidebar {
+  width: 250px;
+  background: var(--panel-bg);
+  border-radius: var(--radius-lg);
+  padding: 30px;
+  box-shadow: var(--card-shadow);
+  flex-shrink: 0;
+}
+.todo-main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Toast Styles */
+#toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.toast {
+  background-color: var(--text-main);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: slideInUp 0.3s ease forwards;
+}
+.toast.toast-error {
+  background-color: var(--danger);
+}
+@keyframes slideInUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@media (max-width: 768px) {
+  .calendar-layout-container {
+    flex-direction: column;
+  }
+  .calendar-sidebar {
+    width: 100%;
+  }
+  .calendar-main-area {
+    width: 100%;
+    padding: 20px 15px;
+  }
+  
+  .todo-layout-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .todo-sidebar {
+    width: 100%;
+    padding: 20px;
+  }
+  .todo-main-area {
+    width: 100%;
+  }
+}
 </style>

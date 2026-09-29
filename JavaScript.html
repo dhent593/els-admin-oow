@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupNotifications();
   setupClearArsip();
   setupPrintSiapDiambil();
+  setupTodoList();
   
   // Initialize Clock
   setInterval(updateClock, 1000);
@@ -302,6 +303,7 @@ function setupNavigation() {
       } else if (target === 'todo-view') {
         const todoSec = document.getElementById('todo-view');
         todoSec.classList.remove('hidden');
+        loadTodos();
       } else {
         const table = document.getElementById('table-view');
         table.classList.remove('hidden');
@@ -2846,5 +2848,465 @@ document.addEventListener('keydown', function(e) {
     }
   }
 });
+
+// Calendar Navigation Logic
+function changeCalendarView(viewType) {
+  // Update buttons
+  const buttons = {
+    monthly: document.getElementById('btn-monthly'),
+    weekly: document.getElementById('btn-weekly'),
+    daily: document.getElementById('btn-daily')
+  };
+  
+  for (const key in buttons) {
+    if (buttons[key]) {
+      buttons[key].classList.remove('active');
+    }
+  }
+  
+  if (buttons[viewType]) {
+    buttons[viewType].classList.add('active');
+  }
+  
+  // Update views
+  const views = {
+    monthly: document.getElementById('calendar-monthly-view'),
+    weekly: document.getElementById('calendar-weekly-view'),
+    daily: document.getElementById('calendar-daily-view')
+  };
+  
+  for (const key in views) {
+    if (views[key]) {
+      views[key].classList.remove('active-view');
+      views[key].classList.add('hidden');
+    }
+  }
+  
+  if (views[viewType]) {
+    views[viewType].classList.add('active-view');
+    views[viewType].classList.remove('hidden');
+  }
+}
+
+let appTodoData = [];
+let todoToDelete = null;
+let editingTodoId = null;
+
+let currentTodoFilter = 'all'; // all, penting, selesai, dihapus, due-soon
+let currentTodoLabelFilter = 'all'; // all, Team, Low, Medium, High
+let currentTodoSort = 'newest'; // newest, oldest
+
+function setupTodoList() {
+  const btnAdd = document.getElementById('btn-add-todo');
+  const modal = document.getElementById('todo-modal');
+  const btnClose = document.getElementById('close-todo-modal');
+  const btnCancel = document.getElementById('btn-cancel-todo');
+  const btnSave = document.getElementById('btn-save-todo');
+  
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      editingTodoId = null;
+      const headerText = document.querySelector('#todo-modal .modal-header h2');
+      if(headerText) headerText.textContent = 'New Task';
+      document.getElementById('todo-title').value = '';
+      document.getElementById('todo-duedate').value = '';
+      document.getElementById('todo-label').value = '';
+      document.getElementById('todo-assignee').value = '';
+      document.getElementById('todo-important').checked = false;
+      modal.classList.remove('hidden');
+    });
+  }
+  if (btnClose) btnClose.addEventListener('click', () => modal.classList.add('hidden'));
+  if (btnCancel) btnCancel.addEventListener('click', () => modal.classList.add('hidden'));
+  
+  const btnConfirmDeleteTodo = document.getElementById('btn-confirm-delete-todo');
+  if (btnConfirmDeleteTodo) {
+    btnConfirmDeleteTodo.addEventListener('click', () => {
+      if (!todoToDelete) return;
+      document.getElementById('todo-delete-modal').classList.add('hidden');
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(() => { loadTodos(); todoToDelete = null; })
+        .removeTodo(todoToDelete);
+    });
+  }
+  
+  // Setup Filter Listeners
+  const filterIds = {
+    'filter-all': 'all',
+    'filter-penting': 'penting',
+    'filter-selesai': 'selesai',
+    'filter-dihapus': 'dihapus',
+    'filter-due-soon': 'due-soon'
+  };
+  for (const [id, filterVal] of Object.entries(filterIds)) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', () => {
+        if (currentTodoFilter === filterVal) return;
+        
+        currentTodoFilter = filterVal;
+        Object.keys(filterIds).forEach(k => {
+          if(document.getElementById(k)) document.getElementById(k).style.backgroundColor = '';
+        });
+        el.style.backgroundColor = 'var(--primary-light)';
+        
+        renderTodoList();
+      });
+    }
+  }
+  
+  const labelIds = {
+    'filter-label-Team': 'Team',
+    'filter-label-Low': 'Low',
+    'filter-label-Medium': 'Medium',
+    'filter-label-High': 'High'
+  };
+  for (const [id, filterVal] of Object.entries(labelIds)) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('click', () => {
+        if (currentTodoLabelFilter === filterVal) {
+          currentTodoLabelFilter = 'all';
+          el.style.backgroundColor = '';
+        } else {
+          currentTodoLabelFilter = filterVal;
+          Object.keys(labelIds).forEach(k => {
+            if(document.getElementById(k)) document.getElementById(k).style.backgroundColor = '';
+          });
+          el.style.backgroundColor = 'var(--primary-light)';
+        }
+        renderTodoList();
+      });
+    }
+  }
+  
+  const btnSort = document.getElementById('btn-sort-todo');
+  if (btnSort) {
+    btnSort.addEventListener('click', () => {
+      if (currentTodoSort === 'newest') {
+        currentTodoSort = 'oldest';
+        btnSort.innerHTML = 'Terlama <i class="fas fa-chevron-up"></i>';
+      } else {
+        currentTodoSort = 'newest';
+        btnSort.innerHTML = 'Terbaru <i class="fas fa-chevron-down"></i>';
+      }
+      renderTodoList();
+    });
+  }
+  
+  if (btnSave) {
+    btnSave.addEventListener('click', () => {
+      const title = document.getElementById('todo-title').value;
+      if (!title) return alert("Judul tugas tidak boleh kosong");
+      
+      const data = {
+        Title: title,
+        Due_Date: document.getElementById('todo-duedate').value,
+        Labels: document.getElementById('todo-label').value,
+        Assignees: document.getElementById('todo-assignee').value,
+        Is_Important: document.getElementById('todo-important').checked,
+        Created_By: (typeof localStorage !== 'undefined' ? localStorage.getItem('loggedUsername') : 'Admin') || 'Admin'
+      };
+      
+      modal.classList.add('hidden');
+      
+      if (editingTodoId) {
+        // Optimistic update for Edit
+        const task = appTodoData.find(t => t.Task_ID === editingTodoId);
+        if (task) {
+          task.Title = data.Title;
+          task.Due_Date = data.Due_Date;
+          task.Labels = data.Labels;
+          task.Assignees = data.Assignees;
+          task.Is_Important = data.Is_Important ? 'TRUE' : 'FALSE';
+          renderTodoList();
+        }
+        
+        google.script.run
+          .withSuccessHandler(res => {
+            if (res.success) {
+              showToast('Tugas berhasil diperbarui');
+            } else {
+              showToast('Gagal memperbarui: ' + res.error, true);
+              loadTodos(); // reload if failed
+            }
+          })
+          .withFailureHandler(err => {
+            showToast('Error: ' + err, true);
+            loadTodos();
+          })
+          .editTodo(editingTodoId, data);
+          
+      } else {
+        // Create new
+        showLoading(true);
+        google.script.run
+          .withSuccessHandler(res => {
+            showLoading(false);
+            if (res.success) {
+              loadTodos();
+            } else {
+              alert("Gagal menyimpan task: " + res.error);
+            }
+          })
+          .withFailureHandler(err => {
+            showLoading(false);
+            alert("Error: " + err);
+          })
+          .addTodo(data);
+      }
+    });
+  }
+}
+
+function loadTodos() {
+  showLoading(true);
+  google.script.run
+    .withSuccessHandler(data => {
+      showLoading(false);
+      appTodoData = data;
+      renderTodoList();
+    })
+    .withFailureHandler(err => {
+      showLoading(false);
+      console.error(err);
+    })
+    .getTodos();
+}
+
+function renderTodoList() {
+  const container = document.getElementById('todo-list-container');
+  if (!container) return;
+  
+  container.innerHTML = '';
+  
+  let filteredTodos = appTodoData;
+  
+  // Apply Status Filter
+  if (currentTodoFilter === 'dihapus') {
+    filteredTodos = filteredTodos.filter(t => t.Status === 'Removed');
+  } else {
+    filteredTodos = filteredTodos.filter(t => t.Status !== 'Removed');
+    
+    if (currentTodoFilter === 'penting') {
+      filteredTodos = filteredTodos.filter(t => t.Is_Important === true || t.Is_Important === 'TRUE');
+    } else if (currentTodoFilter === 'selesai') {
+      filteredTodos = filteredTodos.filter(t => t.Status === 'Completed');
+    } else if (currentTodoFilter === 'due-soon') {
+      const today = new Date();
+      const threeDaysLater = new Date();
+      threeDaysLater.setDate(today.getDate() + 3);
+      
+      filteredTodos = filteredTodos.filter(t => {
+        if (t.Status === 'Completed' || !t.Due_Date) return false;
+        try {
+          // Parse DD/MM/YYYY hh:mm or MM/DD/YYYY from strings
+          let dateStr = t.Due_Date;
+          if (dateStr.includes(' ')) dateStr = dateStr.split(' ')[0]; // Ambil bagian tanggal
+          
+          let parts;
+          if (dateStr.includes('/')) parts = dateStr.split('/');
+          else if (dateStr.includes('-')) parts = dateStr.split('-');
+          else return false;
+          
+          let dueDate;
+          if (parts[2] && parts[2].length === 4) { // format DD/MM/YYYY
+            dueDate = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+          } else if (parts[0] && parts[0].length === 4) { // format YYYY/MM/DD
+            dueDate = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+          } else {
+            dueDate = new Date(dateStr); // Fallback
+          }
+          
+          return dueDate <= threeDaysLater && dueDate >= new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+        } catch(e) {
+          return false;
+        }
+      });
+    }
+  }
+  
+  // Apply Label Filter
+  if (currentTodoLabelFilter !== 'all') {
+    filteredTodos = filteredTodos.filter(t => t.Labels === currentTodoLabelFilter);
+  }
+  
+  // Apply Sort (Completed tasks always at the bottom)
+  filteredTodos.sort((a, b) => {
+    const isACompleted = a.Status === 'Completed';
+    const isBCompleted = b.Status === 'Completed';
+    
+    if (isACompleted && !isBCompleted) return 1;
+    if (!isACompleted && isBCompleted) return -1;
+    
+    let dateA = new Date(a.Created_Date || 0);
+    let dateB = new Date(b.Created_Date || 0);
+    if (isNaN(dateA.getTime())) dateA = new Date(0);
+    if (isNaN(dateB.getTime())) dateB = new Date(0);
+    
+    return currentTodoSort === 'newest' ? dateB - dateA : dateA - dateB;
+  });
+  
+  if (filteredTodos.length === 0) {
+    container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--text-muted);">Belum ada task.</div>';
+    return;
+  }
+  
+  filteredTodos.forEach(task => {
+    const isCompleted = task.Status === 'Completed';
+    const isImportant = task.Is_Important === true || task.Is_Important === 'TRUE';
+    
+    let labelsHtml = '';
+    if (task.Labels) {
+      const color = task.Labels === 'High' ? '#ef4444' : task.Labels === 'Medium' ? '#f59e0b' : task.Labels === 'Low' ? '#10b981' : 'var(--primary)';
+      const bg = task.Labels === 'High' ? '#fee2e2' : task.Labels === 'Medium' ? '#fef3c7' : task.Labels === 'Low' ? '#d1fae5' : 'var(--primary-light)';
+      labelsHtml += `<span style="background: ${bg}; color: ${color}; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> ${task.Labels}</span>`;
+    }
+    
+    if (isImportant) {
+      labelsHtml += `<span style="background: #fef3c7; color: #f59e0b; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-exclamation-circle"></i> Penting</span>`;
+    }
+    
+    let assigneesHtml = '';
+    if (task.Assignees) {
+      assigneesHtml += '<div style="display: flex;">';
+      const parts = task.Assignees.split(',');
+      parts.forEach((p, idx) => {
+        assigneesHtml += `<div style="width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: ${idx>0?'-10px':'0'}; z-index: ${10-idx};">${p.trim().substring(0,2).toUpperCase()}</div>`;
+      });
+      assigneesHtml += '</div>';
+    }
+    
+    const div = document.createElement('div');
+    div.style.background = 'var(--panel-bg)';
+    div.style.borderRadius = '16px';
+    div.style.padding = '20px';
+    div.style.display = 'flex';
+    div.style.alignItems = 'center';
+    div.style.justifyContent = 'space-between';
+    div.style.boxShadow = 'var(--soft-shadow)';
+    div.style.marginBottom = '15px';
+    
+    div.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 20px;">
+        <input type="checkbox" onchange="toggleTodo('${task.Task_ID}', this.checked)" ${isCompleted ? 'checked' : ''} class="custom-checkbox">
+        <div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">${task.Created_Date || ''} ${task.Due_Date ? ' | Due: ' + task.Due_Date : ''}</div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--text-main); ${isCompleted ? 'text-decoration: line-through; opacity: 0.7;' : ''}">${task.Title}</div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        ${labelsHtml}
+        ${assigneesHtml}
+        <button onclick="editTodoTask('${task.Task_ID}')" style="background: none; border: none; color: var(--primary); cursor: pointer; font-size: 16px; margin-right: 5px;"><i class="fas fa-edit"></i></button>
+        <button onclick="removeTodoTask('${task.Task_ID}')" style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 16px;"><i class="fas fa-trash"></i></button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+window.toggleTodo = function(id, isChecked) {
+  const status = isChecked ? 'Completed' : 'Active';
+  
+  // Optimistic UI Update
+  const task = appTodoData.find(t => t.Task_ID === id);
+  if (task) {
+    task.Status = status;
+    renderTodoList(); // re-render immediately to reflect changes and apply sort
+  }
+  
+  // Background Request
+  google.script.run
+    .withSuccessHandler(() => {
+      showToast('Tugas berhasil diperbarui');
+    })
+    .withFailureHandler((err) => {
+      // Revert if failed
+      if (task) {
+        task.Status = isChecked ? 'Active' : 'Completed';
+        renderTodoList();
+      }
+      showToast('Gagal memperbarui tugas', true);
+      console.error(err);
+    })
+    .updateTodoStatus(id, status);
+}
+
+window.showToast = function(message, isError = false) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  
+  const toast = document.createElement('div');
+  toast.className = 'toast' + (isError ? ' toast-error' : '');
+  
+  const icon = document.createElement('i');
+  icon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+  if (!isError) icon.style.color = '#10b981'; // Green for success
+  
+  const text = document.createElement('span');
+  text.textContent = message;
+  
+  toast.appendChild(icon);
+  toast.appendChild(text);
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'fadeOut 0.3s ease forwards';
+    setTimeout(() => {
+      toast.remove();
+    }, 300);
+  }, 3000);
+}
+
+window.removeTodoTask = function(id) {
+  todoToDelete = id;
+  const modalText = document.querySelector('#todo-delete-modal .modal-body p');
+  const modalBtn = document.getElementById('btn-confirm-delete-todo');
+  if (modalText && modalBtn) {
+    if (currentTodoFilter === 'dihapus') {
+      modalText.textContent = "Apakah Anda yakin ingin menghapus tugas ini secara permanen dari database?";
+      modalBtn.textContent = "Hapus Permanen";
+    } else {
+      modalText.textContent = "Apakah Anda yakin ingin memindahkan tugas ini ke tempat sampah (Dihapus)?";
+      modalBtn.textContent = "Hapus";
+    }
+  }
+  document.getElementById('todo-delete-modal').classList.remove('hidden');
+}
+
+window.editTodoTask = function(id) {
+  const task = appTodoData.find(t => t.Task_ID === id);
+  if (!task) return;
+  
+  editingTodoId = id;
+  const headerText = document.querySelector('#todo-modal .modal-header h2');
+  if(headerText) headerText.textContent = 'Edit Task';
+  
+  document.getElementById('todo-title').value = task.Title || '';
+  
+  // Format Date for datetime-local input
+  let formattedDate = '';
+  if (task.Due_Date) {
+    try {
+      // Due_Date is formatted as dd/MM/yyyy HH:mm from backend
+      const parts = task.Due_Date.split(' ');
+      if (parts.length === 2) {
+        const dateParts = parts[0].split('/');
+        if (dateParts.length === 3) {
+          formattedDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}T${parts[1]}`;
+        }
+      }
+    } catch(e) {}
+  }
+  document.getElementById('todo-duedate').value = formattedDate;
+  
+  document.getElementById('todo-label').value = task.Labels || '';
+  document.getElementById('todo-assignee').value = task.Assignees || '';
+  document.getElementById('todo-important').checked = task.Is_Important === true || task.Is_Important === 'TRUE';
+  
+  document.getElementById('todo-modal').classList.remove('hidden');
+}
 
 </script>

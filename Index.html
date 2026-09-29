@@ -239,11 +239,11 @@
       </div>
     </section>
 
-    <!-- Calendar View (Dummy) -->
+    <!-- Calendar View -->
     <section id="calendar-view" class="view-section hidden">
-      <div style="display: flex; gap: 30px;">
+      <div class="calendar-layout-container">
         <!-- Left Sidebar -->
-        <div style="width: 250px; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow);">
+        <div class="calendar-sidebar">
           <button onclick="openKalenderModal()" style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
             <i class="fas fa-plus"></i> New Event
           </button>
@@ -257,102 +257,94 @@
         </div>
 
         <!-- Main Calendar Area -->
-        <div style="flex: 1; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h2 id="calendar-month-title" style="font-size: 24px; font-weight: 700; color: var(--text-main);">February 2021 <i class="fas fa-chevron-down" style="font-size: 14px; color: var(--primary); margin-left: 10px;"></i></h2>
-            <div style="display: flex; background: var(--bg-color); border-radius: 20px; padding: 4px;">
-              <button style="border: none; background: var(--primary-light); color: var(--primary); padding: 6px 15px; border-radius: 15px; font-weight: 600; font-size: 13px; cursor: pointer;">Monthly</button>
-              <button style="border: none; background: transparent; color: var(--text-muted); padding: 6px 15px; border-radius: 15px; font-weight: 500; font-size: 13px; cursor: pointer;">Weekly</button>
-              <button style="border: none; background: transparent; color: var(--text-muted); padding: 6px 15px; border-radius: 15px; font-weight: 500; font-size: 13px; cursor: pointer;">Day</button>
+        <div class="calendar-main-area">
+          <div class="calendar-header-bar">
+            <h2 id="calendar-month-title" style="font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 10px;">September 2026 <i class="fas fa-chevron-down" style="font-size: 14px; color: var(--primary); margin-left: 10px;"></i></h2>
+            <div class="calendar-nav-buttons">
+              <button id="btn-monthly" onclick="changeCalendarView('monthly')" class="cal-nav-btn active">Monthly</button>
+              <button id="btn-weekly" onclick="changeCalendarView('weekly')" class="cal-nav-btn">Weekly</button>
+              <button id="btn-daily" onclick="changeCalendarView('daily')" class="cal-nav-btn">Day</button>
             </div>
           </div>
           
-          <!-- Calendar Grid -->
-          <div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;">
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Sunday</div>
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Monday</div>
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Tuesday</div>
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Wednesday</div>
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Thursday</div>
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Friday</div>
-            <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Saturday</div>
+          <!-- Calendar Views Container -->
+          <div class="calendar-views-wrapper">
             
-            <!-- Rows injected by JS -->
+            <!-- Monthly View -->
+            <div id="calendar-monthly-view" class="calendar-view-container active-view">
+              <div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0; border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; min-width: 700px;">
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Minggu</div>
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Senin</div>
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Selasa</div>
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Rabu</div>
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Kamis</div>
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Jumat</div>
+                <div style="padding: 15px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-color);">Sabtu</div>
+                
+                <!-- Rows injected by JS -->
+              </div>
+            </div>
+
+            <!-- Weekly View -->
+            <div id="calendar-weekly-view" class="calendar-view-container hidden">
+              <div style="padding: 40px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius: 12px; min-width: 700px;">
+                <i class="bx bx-calendar-week" style="font-size: 48px; margin-bottom: 15px; color: var(--primary-light);"></i>
+                <p>Weekly view content will be implemented here.</p>
+              </div>
+            </div>
+
+            <!-- Daily View -->
+            <div id="calendar-daily-view" class="calendar-view-container hidden">
+              <div style="padding: 40px; text-align: center; color: var(--text-muted); border: 1px dashed var(--border-color); border-radius: 12px; min-width: 400px;">
+                <i class="bx bx-calendar-event" style="font-size: 48px; margin-bottom: 15px; color: var(--primary-light);"></i>
+                <p>Daily view content will be implemented here.</p>
+              </div>
+            </div>
+            
           </div>
         </div>
       </div>
     </section>
 
-    <!-- To Do View (Dummy) -->
+    <!-- To Do View -->
     <section id="todo-view" class="view-section hidden">
-      <div style="display: flex; gap: 30px;">
+      <div class="todo-layout-container">
         <!-- Left Sidebar -->
-        <div style="width: 250px; background: var(--panel-bg); border-radius: var(--radius-lg); padding: 30px; box-shadow: var(--card-shadow);">
-          <button style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
-            <i class="fas fa-plus"></i> New Task
+        <div class="todo-sidebar">
+          <button id="btn-add-todo" style="width: 100%; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);">
+            <i class="fas fa-plus"></i> Tugas Baru
           </button>
           
-          <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
-            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--primary); font-weight: 600; font-size: 14px; cursor: pointer;"><i class="fas fa-exclamation-circle" style="font-size: 16px;"></i> Important</li>
-            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer;"><i class="fas fa-check-double" style="font-size: 16px;"></i> Completed</li>
-            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer;"><i class="fas fa-trash" style="font-size: 16px;"></i> Removed</li>
-            <li style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer;"><i class="fas fa-clock" style="font-size: 16px;"></i> Due Soon</li>
+          <ul id="todo-filters-list" style="list-style: none; padding: 0; margin-bottom: 30px;">
+            <li id="filter-all" class="todo-filter-item" style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px; background: var(--primary-light);"><i class="fas fa-list" style="font-size: 16px;"></i> Semua Tugas Aktif</li>
+            <li id="filter-penting" class="todo-filter-item" style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-exclamation-circle" style="font-size: 16px;"></i> Penting</li>
+            <li id="filter-selesai" class="todo-filter-item" style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-check-double" style="font-size: 16px;"></i> Selesai</li>
+            <li id="filter-dihapus" class="todo-filter-item" style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-trash" style="font-size: 16px;"></i> Dihapus</li>
+            <li id="filter-due-soon" class="todo-filter-item" style="padding: 12px 15px; display: flex; align-items: center; gap: 15px; color: var(--text-muted); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-clock" style="font-size: 16px;"></i> Tenggat Waktu Dekat</li>
           </ul>
           
           <h4 style="font-size: 12px; color: var(--text-muted); margin-bottom: 15px; font-weight: 500; display: flex; justify-content: space-between; align-items: center;">Labels <i class="fas fa-ellipsis-h"></i></h4>
-          <ul style="list-style: none; padding: 0;">
-            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: var(--primary);"></i> Team</li>
-            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: #10b981;"></i> Low</li>
-            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: #f59e0b;"></i> Medium</li>
-            <li style="padding: 10px 0; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px;"><i class="fas fa-tag" style="color: #ef4444;"></i> High</li>
+          <ul id="todo-labels-list" style="list-style: none; padding: 0;">
+            <li id="filter-label-Team" class="todo-label-item" style="padding: 10px 10px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-tag" style="color: var(--primary);"></i> Team</li>
+            <li id="filter-label-Low" class="todo-label-item" style="padding: 10px 10px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-tag" style="color: #10b981;"></i> Low</li>
+            <li id="filter-label-Medium" class="todo-label-item" style="padding: 10px 10px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-tag" style="color: #f59e0b;"></i> Medium</li>
+            <li id="filter-label-High" class="todo-label-item" style="padding: 10px 10px; display: flex; align-items: center; gap: 15px; color: var(--text-main); font-weight: 500; font-size: 14px; cursor: pointer; border-radius: 8px;"><i class="fas fa-tag" style="color: #ef4444;"></i> High</li>
           </ul>
         </div>
 
         <!-- Main Task List Area -->
-        <div style="flex: 1;">
+        <div class="todo-main-area">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;"><i class="fas fa-exclamation-circle"></i> Important Task</h2>
+            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px;"><i class="fas fa-list-ul"></i> Daftar Tugas</h2>
             <div style="display: flex; gap: 10px;">
-              <button style="border: none; background: white; color: var(--text-main); padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: var(--soft-shadow);">Newest <i class="fas fa-chevron-down"></i></button>
+              <button id="btn-sort-todo" style="border: none; background: white; color: var(--text-main); padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; box-shadow: var(--soft-shadow);">Terbaru <i class="fas fa-chevron-down"></i></button>
               <button style="border: none; background: var(--primary-light); color: var(--primary); width: 35px; height: 35px; border-radius: 8px; cursor: pointer;"><i class="fas fa-bars"></i></button>
             </div>
           </div>
           
-          <div style="display: flex; flex-direction: column; gap: 15px;">
-            <!-- Task Item 1 -->
-            <div style="background: var(--panel-bg); border-radius: 16px; padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--soft-shadow);">
-              <div style="display: flex; align-items: center; gap: 20px;">
-                <input type="checkbox" style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
-                <div>
-                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">January 24th, 2021 04:25 PM</div>
-                  <div style="font-size: 15px; font-weight: 600; color: var(--text-main);">Fix login & register form design</div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 15px;">
-                <span style="background: var(--primary-light); color: var(--primary); padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> Team</span>
-                <span style="background: #fef3c7; color: #f59e0b; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> Important</span>
-                <div style="display: flex;">
-                  <div style="width: 32px; height: 32px; border-radius: 50%; background: #e2e8f0; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -10px; z-index: 3;">A</div>
-                  <div style="width: 32px; height: 32px; border-radius: 50%; background: #cbd5e1; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -10px; z-index: 2;">B</div>
-                  <div style="width: 32px; height: 32px; border-radius: 50%; background: #94a3b8; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 10px; margin-left: -10px; z-index: 1;">C</div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Task Item 2 -->
-            <div style="background: var(--panel-bg); border-radius: 16px; padding: 20px; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--soft-shadow);">
-              <div style="display: flex; align-items: center; gap: 20px;">
-                <input type="checkbox" checked style="width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary);">
-                <div>
-                  <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">January 24th, 2021 04:25 PM</div>
-                  <div style="font-size: 15px; font-weight: 600; color: var(--text-main); text-decoration: line-through; opacity: 0.7;">Redesign navigation bar in Geex Landing page</div>
-                </div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 15px;">
-                <span style="background: var(--primary-light); color: var(--primary); padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> Team</span>
-                <span style="background: #fee2e2; color: #ef4444; padding: 6px 15px; border-radius: 20px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px;"><i class="fas fa-tag"></i> High</span>
-              </div>
-            </div>
+          <div id="todo-list-container" style="display: flex; flex-direction: column; gap: 15px;">
+            <!-- Render dinamis dari JavaScript -->
+            <div style="text-align: center; color: var(--text-muted); padding: 30px;">Loading tasks...</div>
           </div>
         </div>
       </div>
@@ -1008,6 +1000,71 @@
       </div>
     </div>
   </div>
+
+  <!-- Todo List Modal -->
+  <div id="todo-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h2>New Task</h2>
+        <button class="close-btn" id="close-todo-modal"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Judul Tugas</label>
+          <input type="text" id="todo-title" class="form-control" placeholder="Contoh: Fix form design">
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Due Date</label>
+          <input type="datetime-local" id="todo-duedate" class="form-control">
+        </div>
+        <div style="margin-bottom: 15px; display: flex; gap: 15px; flex-wrap: wrap;">
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Label (Opsional)</label>
+            <select id="todo-label" class="form-control">
+              <option value="">Pilih Label</option>
+              <option value="Team">Team</option>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+          <div style="flex: 1;">
+            <label style="display: block; margin-bottom: 5px; font-weight: 600; font-size: 13px;">Assignee</label>
+            <input type="text" id="todo-assignee" class="form-control" placeholder="Inisial misal: A, B">
+          </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label style="display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 13px; cursor: pointer;">
+            <input type="checkbox" id="todo-important" class="custom-checkbox">
+            Tandai sebagai Penting
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-cancel-todo">Batal</button>
+        <button class="btn btn-primary" id="btn-save-todo"><i class="fas fa-save"></i> Simpan Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Todo Delete Confirm Modal -->
+  <div id="todo-delete-modal" class="modal hidden">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <div class="modal-header" style="justify-content: center; border: none; padding-bottom: 0;">
+        <h2 style="color: var(--danger);">Hapus Tugas</h2>
+      </div>
+      <div class="modal-body" style="padding-top: 15px;">
+        <p>Apakah Anda yakin ingin menghapus tugas ini secara permanen?</p>
+      </div>
+      <div class="modal-footer" style="justify-content: center; border: none;">
+        <button class="btn btn-outline" onclick="document.getElementById('todo-delete-modal').classList.add('hidden')">Batal</button>
+        <button class="btn btn-danger" id="btn-confirm-delete-todo" style="background: var(--danger); color: white; border: none;">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
 
   <?!= include('JavaScript'); ?>
 </body>

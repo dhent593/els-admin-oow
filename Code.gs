@@ -804,3 +804,126 @@ function deleteKalenderEvent(id) {
     return { success: false, error: e.toString() };
   }
 }
+
+// ----------------------------------------------------
+// TODO LIST
+// ----------------------------------------------------
+function getTodoSheet() {
+  const ss = getSpreadsheet();
+  let sheet = ss.getSheetByName("Todo_List");
+  if (!sheet) {
+    sheet = ss.insertSheet("Todo_List");
+    sheet.appendRow(["Task_ID", "Title", "Created_Date", "Due_Date", "Status", "Is_Important", "Labels", "Assignees", "Created_By"]);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getTodos() {
+  try {
+    const sheet = getTodoSheet();
+    const data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return [];
+    
+    const headers = data[0];
+    const todos = [];
+    for (let i = 1; i < data.length; i++) {
+      let row = data[i];
+      let todo = {};
+      headers.forEach((h, idx) => {
+        if (row[idx] instanceof Date) {
+          todo[h] = Utilities.formatDate(row[idx], "GMT+7", "dd/MM/yyyy HH:mm");
+        } else {
+          todo[h] = row[idx];
+        }
+      });
+      todos.push(todo);
+    }
+    return todos;
+  } catch(e) {
+    return [];
+  }
+}
+
+function addTodo(todoData) {
+  try {
+    const sheet = getTodoSheet();
+    const now = new Date();
+    const id = "TODO-" + Utilities.formatDate(now, "GMT+7", "yyyyMMdd-HHmmss");
+    
+    sheet.appendRow([
+      id,
+      todoData.Title || "",
+      now,
+      todoData.Due_Date || "",
+      todoData.Status || "Active",
+      todoData.Is_Important ? "TRUE" : "FALSE",
+      todoData.Labels || "",
+      todoData.Assignees || "",
+      todoData.Created_By || ""
+    ]);
+    return { success: true, id: id };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function editTodo(id, todoData) {
+  try {
+    if(!id) return { success: false, error: "ID kosong" };
+    const sheet = getTodoSheet();
+    const data = sheet.getDataRange().getValues();
+    for(let i = 1; i < data.length; i++) {
+      if(data[i][0] == id) {
+        // Kolom: [Task_ID, Title, Created_Date, Due_Date, Status, Is_Important, Labels, Assignees, Created_By]
+        sheet.getRange(i + 1, 2).setValue(todoData.Title || "");
+        sheet.getRange(i + 1, 4).setValue(todoData.Due_Date || "");
+        sheet.getRange(i + 1, 6).setValue(todoData.Is_Important ? "TRUE" : "FALSE");
+        sheet.getRange(i + 1, 7).setValue(todoData.Labels || "");
+        sheet.getRange(i + 1, 8).setValue(todoData.Assignees || "");
+        return { success: true };
+      }
+    }
+    return { success: false, error: "Task tidak ditemukan" };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function updateTodoStatus(id, status) {
+  try {
+    if(!id) return { success: false, error: "ID kosong" };
+    const sheet = getTodoSheet();
+    const data = sheet.getDataRange().getValues();
+    for(let i = 1; i < data.length; i++) {
+      if(data[i][0] == id) {
+        sheet.getRange(i + 1, 5).setValue(status);
+        return { success: true };
+      }
+    }
+    return { success: false, error: "Task tidak ditemukan" };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
+
+function removeTodo(id) {
+  try {
+    if(!id) return { success: false, error: "ID kosong" };
+    const sheet = getTodoSheet();
+    const data = sheet.getDataRange().getValues();
+    for(let i = 1; i < data.length; i++) {
+      if(data[i][0] == id) {
+        if(data[i][4] === 'Removed') {
+          sheet.deleteRow(i + 1);
+        } else {
+          sheet.getRange(i + 1, 5).setValue("Removed"); 
+        }
+        return { success: true };
+      }
+    }
+    return { success: false, error: "Task tidak ditemukan" };
+  } catch(e) {
+    return { success: false, error: e.toString() };
+  }
+}
